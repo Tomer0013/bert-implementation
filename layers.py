@@ -116,5 +116,29 @@ class TransformerEncoderBlock(nn.Module):
         return x
 
 
+class PositionalEncoding(nn.Module):
+    """
+    A module which adds positional encoding to the input.
+
+    Args:
+        max_seq_len (int): Maximum possible sequence length supported.
+        dim (int): Input dimension.
+    """
+    def __init__(self, max_seq_len, dim):
+        super(PositionalEncoding, self).__init__()
+        idx_i = torch.arange(max_seq_len, dtype=torch.float32)
+        idx_j = torch.arange(dim, dtype=torch.float32)
+        grid_i, grid_j = torch.meshgrid(idx_i, idx_j, indexing='ij')
+        p = torch.where(grid_j % 2 == 0,
+                        torch.sin(grid_i * 10000 ** (-grid_j / dim)),
+                        torch.cos(grid_i * 10000 ** (-(grid_j - 1) / dim)))
+        self.register_buffer('p', p)
+
+    def forward(self, x):
+        x = x + self.p[:x.shape[1], :]
+
+        return x
+
+
 
 

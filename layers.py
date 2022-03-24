@@ -116,29 +116,25 @@ class TransformerEncoderBlock(nn.Module):
         return x
 
 
-class PositionalEncoding(nn.Module):
+class WordEmbeddings(nn.Module):
     """
-    A module which adds positional encoding to the input.
+    Word embeddings layer cosisting of word embeddings, token type embeddings
+    and learned position embeddings.
 
     Args:
-        max_seq_len (int): Maximum possible sequence length supported.
-        dim (int): Input dimension.
+        num_embeddings (int): Number of words in the embedding.
+        embedding_dim (int): Embedding dimension size.
+        max_seq_len (int): Maximum possible sequence length.
     """
-    def __init__(self, max_seq_len, dim):
-        super(PositionalEncoding, self).__init__()
-        idx_i = torch.arange(max_seq_len, dtype=torch.float32)
-        idx_j = torch.arange(dim, dtype=torch.float32)
-        grid_i, grid_j = torch.meshgrid(idx_i, idx_j, indexing='ij')
-        p = torch.where(grid_j % 2 == 0,
-                        torch.sin(grid_i * 10000 ** (-grid_j / dim)),
-                        torch.cos(grid_i * 10000 ** (-(grid_j - 1) / dim)))
-        self.register_buffer('p', p)
+    def __init__(self, num_embeddings: int, embedding_dim: int, max_seq_len: int) -> None:
+        super(WordEmbeddings, self).__init__()
+        self.word_embeddings = nn.Embedding(num_embeddings, embedding_dim)
+        self.position_embeddings = nn.Parameter(torch.zeros((max_seq_len, embedding_dim)))
+        self.token_type_embeddings = nn.Embedding(2, embedding_dim)
+        self.layer_norm = nn.LayerNorm(embedding_dim)
 
-    def forward(self, x):
-        x = x + self.p[:x.shape[1], :]
-
-        return x
-
+    def forward(self, word_ids: torch.Tensor, token_type_ids: torch.Tensor) -> torch.Tensor:
+        w_emb = self.word_embeddings
 
 
 

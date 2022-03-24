@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
-
 import layers
 
+from tensorflow.train import load_checkpoint
 
 class BERT(nn.Module):
     """
@@ -14,15 +14,16 @@ class BERT(nn.Module):
         num_layers (int): Number of encoder layers.
         num_attn_heads (int): Number of heads within multihead attention.
         intermediate_size (int): Dim size of first linear layer within the feedforward.
-        emb_n_words (int): Number of words in the embedding.
+        num_embeddings (int): Number of words in the embedding.
         max_seq_len (int): Maximum possible sequence length.
         drop_prob (float): Dropout probability.
         attn_drop_prob (float): Droput probability within the attention after the softmax.
     """
     def __init__(self, hidden_size: int, num_layers: int, num_attn_heads: int,
-                 intermediate_size: int, emb_n_words: int, max_seq_len: int,
+                 intermediate_size: int, num_embeddings: int, max_seq_len: int,
                  drop_prob: float, attn_drop_prob: float) -> None:
-        self.word_embeddings = nn.Embedding(emb_n_words, hidden_size)
+        super(BERT, self).__init__()
+        self.word_embeddings = layers.WordEmbeddings(num_embeddings, hidden_size, max_seq_len)
         self.pos_enc = layers.PositionalEncoding(max_seq_len, hidden_size)
         self.enc_layers = nn.ModuleList(
             [layers.TransformerEncoderBlock(hidden_size, num_attn_heads,
@@ -30,3 +31,5 @@ class BERT(nn.Module):
         )
 
     def forward(self, input_ids):
+        pass
+

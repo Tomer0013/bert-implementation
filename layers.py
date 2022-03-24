@@ -125,16 +125,27 @@ class WordEmbeddings(nn.Module):
         num_embeddings (int): Number of words in the embedding.
         embedding_dim (int): Embedding dimension size.
         max_seq_len (int): Maximum possible sequence length.
+        drop_prob (float): Dropout probability.
     """
-    def __init__(self, num_embeddings: int, embedding_dim: int, max_seq_len: int) -> None:
+    def __init__(self, num_embeddings: int, embedding_dim: int, max_seq_len: int, drop_prob: float) -> None:
         super(WordEmbeddings, self).__init__()
+        self.drop_prob = drop_prob
         self.word_embeddings = nn.Embedding(num_embeddings, embedding_dim)
         self.position_embeddings = nn.Parameter(torch.zeros((max_seq_len, embedding_dim)))
         self.token_type_embeddings = nn.Embedding(2, embedding_dim)
         self.layer_norm = nn.LayerNorm(embedding_dim)
 
+        nn.init.xavier_uniform_(self.position_embeddings)
+
     def forward(self, word_ids: torch.Tensor, token_type_ids: torch.Tensor) -> torch.Tensor:
-        w_emb = self.word_embeddings
+        w_emb = self.word_embeddings(word_ids)
+        t_emb = self.token_type_embeddings(token_type_ids)
+        x = w_emb + t_emb + self.position_embeddings[:w_emb.shape[1], :]
+        x = self.layer_norm(x)
+        x = torch.dropout(x, self.drop_prob, self.training)
+
+        return x
+
 
 
 

@@ -23,8 +23,7 @@ class BERT(nn.Module):
                  intermediate_size: int, num_embeddings: int, max_seq_len: int,
                  drop_prob: float, attn_drop_prob: float) -> None:
         super(BERT, self).__init__()
-        self.word_embeddings = layers.WordEmbeddings(num_embeddings, hidden_size, max_seq_len)
-        self.pos_enc = layers.PositionalEncoding(max_seq_len, hidden_size)
+        self.word_embeddings = layers.WordEmbeddings(num_embeddings, hidden_size, max_seq_len, drop_prob)
         self.enc_layers = nn.ModuleList(
             [layers.TransformerEncoderBlock(hidden_size, num_attn_heads,
              intermediate_size, drop_prob, attn_drop_prob) for _ in range(num_layers)]

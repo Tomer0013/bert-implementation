@@ -27,7 +27,7 @@ def masked_softmax(logits, mask, dim=-1, log_softmax=False):
     return probs
 
 
-def create_pytorch_pretrained_state_dict_from_google_ckpt(ckpt_path: str) -> dict:
+def load_pretrained_state_dict_from_google_ckpt(model, ckpt_path: str) -> dict:
     reader = load_checkpoint(ckpt_path)
     pretrained_state_dict = {
         v: reader.get_tensor(v) for v in reader.get_variable_to_shape_map()
@@ -51,6 +51,8 @@ def create_pytorch_pretrained_state_dict_from_google_ckpt(ckpt_path: str) -> dic
         "attention/output/dense/bias": "attn_res_block.func.o_proj.bias"
     }
     new_state_dict = {}
+
+    # Encoder weights
     for key in pretrained_state_dict.keys():
         if "encoder" in key:
             key_split = key.split("/")
@@ -64,6 +66,8 @@ def create_pytorch_pretrained_state_dict_from_google_ckpt(ckpt_path: str) -> dic
             else:
                 new_state_dict[new_key_prefix + convert_dict[sub_key]] = torch.Tensor(
                     pretrained_state_dict[key_prefix + sub_key])
+
+    # Embedding weights
     new_state_dict_emb_keys = [
         "word_embeddings.position_embeddings",
         "word_embeddings.word_embeddings.weight",
@@ -81,4 +85,9 @@ def create_pytorch_pretrained_state_dict_from_google_ckpt(ckpt_path: str) -> dic
     for k1, k2 in zip(new_state_dict_emb_keys, pretrained_state_dict_emb_keys):
         new_state_dict[k1] = torch.Tensor(pretrained_state_dict[k2])
 
-    return new_state_dict
+    # Pooler weights
+    new_state_dict["pooler.weight"] = torch.Tensor(pretrained_state_dict["bert/pooler/dense/kernel"].T)
+    new_state_dict["pooler.bias"] = torch.Tensor(pretrained_state_dict["bert/pooler/dense/bias"])
+
+    model.load_state_dict(new_state_dict)
+

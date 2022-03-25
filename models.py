@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import layers
 
-from tensorflow.train import load_checkpoint
 
 class BERT(nn.Module):
     """
@@ -28,7 +27,20 @@ class BERT(nn.Module):
             [layers.TransformerEncoderBlock(hidden_size, num_attn_heads,
              intermediate_size, drop_prob, attn_drop_prob) for _ in range(num_layers)]
         )
+        self.pooler = nn.Linear(hidden_size, hidden_size)
 
-    def forward(self, input_ids):
-        pass
+    def forward(self, input_ids: torch.Tensor, input_mask: torch.Tensor,
+                token_type_ids: torch.Tensor) -> torch.Tensor:
+        x = self.word_embeddings(input_ids, token_type_ids)
+        for enc in self.enc_layers:
+            x = enc(x, input_mask)
+
+        return x
+
+    def get_pooled_output(self, input_ids: torch.Tensor, input_mask: torch.Tensor,
+                          token_type_ids: torch.Tensor) -> torch.Tensor:
+        x = self(input_ids, input_mask, token_type_ids)
+        x = self.pooler(x[:, 0:1, :].squeeze())
+
+        return x
 

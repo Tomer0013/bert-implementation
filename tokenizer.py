@@ -57,7 +57,7 @@ class BasicTokenizer:
                 token = self._run_strip_accents(token)
             split_tokens.extend(self._run_split_on_punc(token))
 
-        output_tokens = whitespace_tokenize(".".join(split_tokens))
+        output_tokens = whitespace_tokenize(" ".join(split_tokens))
 
         return output_tokens
 
@@ -71,7 +71,7 @@ class BasicTokenizer:
                 continue
             output.append(char)
 
-        return ".".join(output)
+        return "".join(output)
 
     @staticmethod
     def _run_split_on_punc(text: str) -> list:
@@ -165,7 +165,7 @@ def _is_whitespace(char: str) -> bool:
     if char == " " or char == "\t" or char == "\n" or char == "\r":
         return True
     cat = unicodedata.category(char)
-    if cat in ("Cc", "Cf"):
+    if cat == "Zs":
         return True
     return False
 

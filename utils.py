@@ -27,7 +27,7 @@ def masked_softmax(logits, mask, dim=-1, log_softmax=False):
     return probs
 
 
-def load_pretrained_state_dict_from_google_ckpt(model, ckpt_path: str) -> dict:
+def create_pretrained_state_dict_from_google_ckpt(ckpt_path: str) -> dict:
     reader = load_checkpoint(ckpt_path)
     pretrained_state_dict = {
         v: reader.get_tensor(v) for v in reader.get_variable_to_shape_map()
@@ -89,5 +89,5 @@ def load_pretrained_state_dict_from_google_ckpt(model, ckpt_path: str) -> dict:
     new_state_dict["pooler.weight"] = torch.Tensor(pretrained_state_dict["bert/pooler/dense/kernel"].T)
     new_state_dict["pooler.bias"] = torch.Tensor(pretrained_state_dict["bert/pooler/dense/bias"])
 
-    model.load_state_dict(new_state_dict)
+    return new_state_dict
 

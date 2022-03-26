@@ -1,6 +1,5 @@
 from models import BERT
 from utils import create_pretrained_state_dict_from_google_ckpt
-from datasets import load_dataset
 
 
 model = BERT(hidden_size=768, num_layers=12, num_attn_heads=12, intermediate_size=3072,

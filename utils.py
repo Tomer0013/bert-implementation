@@ -1,3 +1,5 @@
+import csv
+
 import torch
 import torch.nn.functional as F
 
@@ -90,4 +92,16 @@ def create_pretrained_state_dict_from_google_ckpt(ckpt_path: str) -> dict:
     new_state_dict["pooler.bias"] = torch.Tensor(pretrained_state_dict["bert/pooler/dense/bias"])
 
     return new_state_dict
+
+
+def read_tsv_file(path: str, quotechar: str = None) -> list:
+    with open(path, 'r') as f:
+        reader = csv.reader(f, delimiter="\t", quotechar=quotechar)
+        lines = []
+        for line in reader:
+            lines.append(line)
+
+        return lines
+
+
 

@@ -14,9 +14,9 @@ class GlueDataset(Dataset):
     """
     def __init__(self, input_ids: np.ndarray, token_type_ids: np.ndarray, labels: np.ndarray) -> None:
         super(GlueDataset, self).__init__()
-        self.input_ids = torch.from_numpy(input_ids).float()
-        self.token_type_ids = torch.from_numpy(token_type_ids).float()
-        self.labels = torch.from_numpy(labels).float()
+        self.input_ids = torch.from_numpy(input_ids).int()
+        self.token_type_ids = torch.from_numpy(token_type_ids).int()
+        self.labels = torch.from_numpy(labels).int()
 
     def __len__(self) -> int:
 

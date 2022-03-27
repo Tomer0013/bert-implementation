@@ -26,7 +26,7 @@ def prep_sentence_pairs_data(data_path: str, vocab_path: str, label_col: int, te
     labels = []
     raw_train = read_tsv_file(data_path)
     for row in raw_train[start_idx:]:
-        labels.append(tokenization.convert_to_unicode(row[label_col]))
+        labels.append(int(tokenization.convert_to_unicode(row[label_col])))
         text_a = row[text_a_col]
         text_b = row[text_b_col]
         tokens_a = tokenization.convert_to_unicode(text_a)

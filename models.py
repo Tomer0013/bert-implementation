@@ -43,6 +43,7 @@ class BERT(nn.Module):
     def get_pooled_output(self, input_ids: torch.Tensor, token_type_ids: torch.Tensor) -> torch.Tensor:
         x = self(input_ids, token_type_ids)
         x = self.pooler(x[:, 0:1, :].squeeze())
+        x = torch.tanh(x)
 
         return x
 

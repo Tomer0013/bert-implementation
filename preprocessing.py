@@ -26,7 +26,7 @@ def prep_sentence_pairs_data(data_path: str, vocab_path: str, label_col: int, te
     labels = []
     raw_train = read_tsv_file(data_path)
     for row in raw_train[start_idx:]:
-        labels.append(int(tokenization.convert_to_unicode(row[label_col])))
+        label = int(tokenization.convert_to_unicode(row[label_col]))
         text_a = row[text_a_col]
         text_b = row[text_b_col]
         tokens_a = tokenization.convert_to_unicode(text_a)
@@ -41,5 +41,6 @@ def prep_sentence_pairs_data(data_path: str, vocab_path: str, label_col: int, te
             x.extend([0]*(max_seq_len - len(x)))
         input_ids_list.append(input_ids)
         token_type_ids_list.append(token_type_ids)
+        labels.append(label)
 
     return np.array(input_ids_list), np.array(token_type_ids_list), np.array(labels)

@@ -20,6 +20,7 @@ class BERT(nn.Module):
         drop_prob (float): Dropout probability.
         attn_drop_prob (float): Droput probability within the attention after the softmax.
     """
+
     def __init__(self, hidden_size: int, num_layers: int, num_attn_heads: int,
                  intermediate_size: int, num_embeddings: int, max_seq_len: int,
                  drop_prob: float, attn_drop_prob: float) -> None:
@@ -27,7 +28,7 @@ class BERT(nn.Module):
         self.word_embeddings = layers.WordEmbeddings(num_embeddings, hidden_size, max_seq_len, drop_prob)
         self.enc_layers = nn.ModuleList(
             [layers.TransformerEncoderBlock(hidden_size, num_attn_heads,
-             intermediate_size, drop_prob, attn_drop_prob) for _ in range(num_layers)]
+                                            intermediate_size, drop_prob, attn_drop_prob) for _ in range(num_layers)]
         )
         self.pooler = nn.Linear(hidden_size, hidden_size)
 
@@ -44,7 +45,7 @@ class BERT(nn.Module):
         x = self.pooler(x[:, 0:1, :].squeeze())
 
         return x
-    
+
 
 class ClassifierBERT(nn.Module):
     """
@@ -62,28 +63,23 @@ class ClassifierBERT(nn.Module):
         attn_drop_prob (float): Droput probability within the attention after the softmax.
         num_classes (int): Number of classes in the classifying task.
     """
+
     def __init__(self, ckpt_path: str, hidden_size: int, num_layers: int, num_attn_heads: int,
                  intermediate_size: int, num_embeddings: int, max_seq_len: int,
                  drop_prob: float, attn_drop_prob: float, num_classes: int) -> None:
         super(ClassifierBERT, self).__init__()
         self.drop_prob = drop_prob
-        self.bert_layer = BERT(hidden_size=hidden_size, num_layers=num_layers, num_attn_heads=num_attn_heads,
-                               intermediate_size=intermediate_size, num_embeddings=num_embeddings,
-                               max_seq_len=max_seq_len, drop_prob=drop_prob, attn_drop_prob=attn_drop_prob)
+        self.bert = BERT(hidden_size=hidden_size, num_layers=num_layers, num_attn_heads=num_attn_heads,
+                         intermediate_size=intermediate_size, num_embeddings=num_embeddings,
+                         max_seq_len=max_seq_len, drop_prob=drop_prob, attn_drop_prob=attn_drop_prob)
         self.output_layer = nn.Linear(hidden_size, num_classes)
 
-        self.bert_layer.load_state_dict(create_pretrained_state_dict_from_google_ckpt(ckpt_path))
+        self.bert.load_state_dict(create_pretrained_state_dict_from_google_ckpt(ckpt_path))
 
     def forward(self, input_ids: torch.Tensor, token_type_ids: torch.Tensor) -> torch.Tensor:
-        x = self.bert_layer.get_pooled_output(input_ids, token_type_ids)
+        x = self.bert.get_pooled_output(input_ids, token_type_ids)
         x = torch.dropout(x, self.drop_prob, self.training)
         x = self.output_layer(x)
         x = torch.log_softmax(x, dim=-1)
 
         return x
-
-
-    
-    
-    
-

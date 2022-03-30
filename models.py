@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import layers
 
-from utils import dev_create_pretrained_state_dict_from_google_ckpt
+from utils import create_pretrained_state_dict_from_google_ckpt
 
 
 class BERT(nn.Module):
@@ -48,7 +48,7 @@ class BERT(nn.Module):
         return x
 
 
-class ClassifierBERT(nn.Module):
+class BertClassifier(nn.Module):
     """
     BERT Model with another linear layer at the end, for the classification task.
     
@@ -68,7 +68,7 @@ class ClassifierBERT(nn.Module):
     def __init__(self, ckpt_path: str, hidden_size: int, num_layers: int, num_attn_heads: int,
                  intermediate_size: int, num_embeddings: int, max_seq_len: int,
                  drop_prob: float, attn_drop_prob: float, num_classes: int) -> None:
-        super(ClassifierBERT, self).__init__()
+        super(BertClassifier, self).__init__()
         self.drop_prob = drop_prob
         self.bert = BERT(hidden_size=hidden_size, num_layers=num_layers, num_attn_heads=num_attn_heads,
                          intermediate_size=intermediate_size, num_embeddings=num_embeddings,
@@ -76,7 +76,7 @@ class ClassifierBERT(nn.Module):
         self.output_layer = nn.Linear(hidden_size, num_classes)
 
         torch.nn.init.trunc_normal_(self.output_layer.weight, std=0.02)
-        self.bert.load_state_dict(dev_create_pretrained_state_dict_from_google_ckpt(ckpt_path))
+        self.bert.load_state_dict(create_pretrained_state_dict_from_google_ckpt(ckpt_path))
 
     def forward(self, input_ids: torch.Tensor, token_type_ids: torch.Tensor) -> torch.Tensor:
         x = self.bert.get_pooled_output(input_ids, token_type_ids)

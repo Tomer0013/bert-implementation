@@ -4,7 +4,7 @@ import torch.nn.functional
 import torch.utils.data as data
 
 from tqdm import tqdm
-from models import ClassifierBERT
+from models import BertClassifier
 from tasks import mrpc_task
 from utils import get_device
 
@@ -16,8 +16,8 @@ max_seq_length = 128
 warmup_proportion = 0.1
 data_path = 'datasets/glue_data/MRPC/'
 vocab_path = "bert_base_pretrained/uncased_L-12_H-768_A-12/vocab.txt"
-ckpt_path = "bert_base_pretrained/v3/bert_model.ckpt"
-model = ClassifierBERT(ckpt_path=ckpt_path, hidden_size=768, num_layers=12, num_attn_heads=12, intermediate_size=3072,
+ckpt_path = "bert_base_pretrained/uncased_L-12_H-768_A-12/bert_model.ckpt"
+model = BertClassifier(ckpt_path=ckpt_path, hidden_size=768, num_layers=12, num_attn_heads=12, intermediate_size=3072,
                        num_embeddings=30522, max_seq_len=512, drop_prob=0.1, attn_drop_prob=0.1, num_classes=2)
 model.to(device)
 train_dataset, dev_dataset = mrpc_task(data_path, vocab_path, max_seq_length)
@@ -34,8 +34,6 @@ epochs = 1
 # num_warmup_steps = int(num_train_steps * warmup_proportion)
 # sched_decay = torch.optim.lr_scheduler.LinearLR(optimizer, total_iters=num_train_steps, start_factor=1, end_factor=0)
 # sched_warmup = torch.optim.lr_scheduler.LinearLR(optimizer, total_iters=num_warmup_steps, start_factor=1e-10, end_factor=1)
-
-print(model.bert.word_embeddings.word_embeddings.weight)
 
 for e in range(epochs):
     model.train()
@@ -56,8 +54,6 @@ for e in range(epochs):
             # sched_decay.step()
             progress_bar.update(batch_size)
             progress_bar.set_postfix(epoch=e, NLL=loss_val)
-
-    print(model.bert.word_embeddings.word_embeddings.weight)
 
     # eval
     num_correct = 0

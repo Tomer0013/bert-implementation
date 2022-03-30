@@ -112,20 +112,87 @@ def get_device() -> str:
     return device
 
 
-def check_accuracy(loader, model, device):
-    num_correct = 0
-    num_samples = 0
-    model.eval()  # set model to evaluation mode
-    with torch.no_grad():
-        for x, y in loader:
-            x = x.to(device=device, dtype=dtype)  # move to device, e.g. GPU
-            y = y.to(device=device, dtype=torch.long)
-            scores = model(x)
-            _, preds = scores.max(1)
-            num_correct += (preds == y).sum()
-            num_samples += preds.size(0)
-        acc = float(num_correct) / num_samples
-        print('Got %d / %d correct (%.2f)' % (num_correct, num_samples, 100 * acc))
+# def check_accuracy(loader, model, device):
+#     num_correct = 0
+#     num_samples = 0
+#     model.eval()  # set model to evaluation mode
+#     with torch.no_grad():
+#         for x, y in loader:
+#             x = x.to(device=device, dtype=dtype)  # move to device, e.g. GPU
+#             y = y.to(device=device, dtype=torch.long)
+#             scores = model(x)
+#             _, preds = scores.max(1)
+#             num_correct += (preds == y).sum()
+#             num_samples += preds.size(0)
+#         acc = float(num_correct) / num_samples
+#         print('Got %d / %d correct (%.2f)' % (num_correct, num_samples, 100 * acc))
+
+
+def dev_create_pretrained_state_dict_from_google_ckpt(ckpt_path: str) -> dict:
+    reader = load_checkpoint(ckpt_path)
+    pretrained_state_dict = {
+        v: reader.get_tensor(v) for v in reader.get_variable_to_shape_map()
+    }
+    convert_dict = {
+        "_attention_layer/_key_dense/kernel/.ATTRIBUTES/VARIABLE_VALUE": "attn_res_block.func.k_proj.weight",
+        "_intermediate_dense/bias/.ATTRIBUTES/VARIABLE_VALUE": "ff_res_block.func.lin_1.bias",
+        "_attention_layer/_key_dense/bias/.ATTRIBUTES/VARIABLE_VALUE": "attn_res_block.func.k_proj.bias",
+        "_attention_layer_norm/gamma/.ATTRIBUTES/VARIABLE_VALUE": "attn_res_block.layer_norm.weight",
+        "_attention_layer_norm/beta/.ATTRIBUTES/VARIABLE_VALUE": "attn_res_block.layer_norm.bias",
+        "_attention_layer/_query_dense/bias/.ATTRIBUTES/VARIABLE_VALUE": "attn_res_block.func.q_proj.bias",
+        "_attention_layer/_output_dense/kernel/.ATTRIBUTES/VARIABLE_VALUE": "attn_res_block.func.o_proj.weight",
+        "_attention_layer/_value_dense/kernel/.ATTRIBUTES/VARIABLE_VALUE": "attn_res_block.func.v_proj.weight",
+        "_attention_layer/_query_dense/kernel/.ATTRIBUTES/VARIABLE_VALUE": "attn_res_block.func.q_proj.weight",
+        "_attention_layer/_value_dense/bias/.ATTRIBUTES/VARIABLE_VALUE": "attn_res_block.func.v_proj.bias",
+        "_intermediate_dense/kernel/.ATTRIBUTES/VARIABLE_VALUE": "ff_res_block.func.lin_1.weight",
+        "_output_layer_norm/gamma/.ATTRIBUTES/VARIABLE_VALUE": "ff_res_block.layer_norm.weight",
+        "_output_layer_norm/beta/.ATTRIBUTES/VARIABLE_VALUE": "ff_res_block.layer_norm.bias",
+        "_output_dense/kernel/.ATTRIBUTES/VARIABLE_VALUE": "ff_res_block.func.lin_2.weight",
+        "_output_dense/bias/.ATTRIBUTES/VARIABLE_VALUE": "ff_res_block.func.lin_2.bias",
+        "_attention_layer/_output_dense/bias/.ATTRIBUTES/VARIABLE_VALUE": "attn_res_block.func.o_proj.bias"
+    }
+    new_state_dict = {}
+
+    # Encoder weights
+    for key in pretrained_state_dict.keys():
+        try:
+            if 4 <= int(key.split('/')[0].split('-')[1]) <= 15:
+                key_split = key.split("/")
+                layer_num = int(key.split('/')[0].split('-')[1]) - 4
+                new_key_prefix = f"enc_layers.{layer_num}."
+                sub_key = "/".join(key_split[1:])
+                if len(pretrained_state_dict[key].shape) == 2:
+                    new_state_dict[new_key_prefix + convert_dict[sub_key]] = torch.Tensor(
+                        pretrained_state_dict[key].T)
+                else:
+                    new_state_dict[new_key_prefix + convert_dict[sub_key]] = torch.Tensor(
+                        pretrained_state_dict[key])
+        except IndexError:
+            continue
+
+    # Embedding weights
+    new_state_dict_emb_keys = [
+        "word_embeddings.position_embeddings",
+        "word_embeddings.word_embeddings.weight",
+        "word_embeddings.token_type_embeddings.weight",
+        "word_embeddings.layer_norm.weight",
+        "word_embeddings.layer_norm.bias"
+    ]
+    pretrained_state_dict_emb_keys = [
+        "layer_with_weights-1/embeddings/.ATTRIBUTES/VARIABLE_VALUE",
+        "layer_with_weights-0/embeddings/.ATTRIBUTES/VARIABLE_VALUE",
+        "layer_with_weights-2/embeddings/.ATTRIBUTES/VARIABLE_VALUE",
+        "layer_with_weights-3/gamma/.ATTRIBUTES/VARIABLE_VALUE",
+        "layer_with_weights-3/beta/.ATTRIBUTES/VARIABLE_VALUE"
+    ]
+    for k1, k2 in zip(new_state_dict_emb_keys, pretrained_state_dict_emb_keys):
+        new_state_dict[k1] = torch.Tensor(pretrained_state_dict[k2])
+
+    # Pooler weights
+    new_state_dict["pooler.weight"] = torch.Tensor(pretrained_state_dict["layer_with_weights-16/kernel/.ATTRIBUTES/VARIABLE_VALUE"].T)
+    new_state_dict["pooler.bias"] = torch.Tensor(pretrained_state_dict["layer_with_weights-16/bias/.ATTRIBUTES/VARIABLE_VALUE"])
+
+    return new_state_dict
 
 
 

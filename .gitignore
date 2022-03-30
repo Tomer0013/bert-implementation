@@ -1,2 +1,2 @@
-bert_base_pretrained/uncased_L-12_H-768_A-12/*
-datasets/*
+bert_base_pretrained/*/*
+datasets/*/*/*

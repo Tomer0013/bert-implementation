@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import layers
 
-from utils import create_pretrained_state_dict_from_google_ckpt
+from utils import dev_create_pretrained_state_dict_from_google_ckpt
 
 
 class BERT(nn.Module):
@@ -75,12 +75,12 @@ class ClassifierBERT(nn.Module):
                          max_seq_len=max_seq_len, drop_prob=drop_prob, attn_drop_prob=attn_drop_prob)
         self.output_layer = nn.Linear(hidden_size, num_classes)
 
-        self.bert.load_state_dict(create_pretrained_state_dict_from_google_ckpt(ckpt_path))
+        torch.nn.init.trunc_normal_(self.output_layer.weight, std=0.02)
+        self.bert.load_state_dict(dev_create_pretrained_state_dict_from_google_ckpt(ckpt_path))
 
     def forward(self, input_ids: torch.Tensor, token_type_ids: torch.Tensor) -> torch.Tensor:
         x = self.bert.get_pooled_output(input_ids, token_type_ids)
         x = torch.dropout(x, self.drop_prob, self.training)
         x = self.output_layer(x)
-        x = torch.log_softmax(x, dim=-1)
 
         return x

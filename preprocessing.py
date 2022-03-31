@@ -1,8 +1,6 @@
 import numpy as np
 import tokenization
 
-from utils import read_tsv_file
-
 
 def truncate_seq_pair(tokens_a: list, tokens_b: list, max_length: int) -> None:
     while True:
@@ -15,24 +13,17 @@ def truncate_seq_pair(tokens_a: list, tokens_b: list, max_length: int) -> None:
             tokens_b.pop()
 
 
-def prep_sentence_pairs_data(data_path: str, vocab_path: str, label_col: int, text_a_col: int,
-                             text_b_col: int, max_seq_len: int, incl_first_row: bool):
+def prep_sentence_pairs_data(data: list, vocab_path: str, max_seq_len: int):
     tokenizer = tokenization.FullTokenizer(vocab_path)
-    start_idx = 1
-    if incl_first_row:
-        start_idx = 0
     input_ids_list = []
     token_type_ids_list = []
     labels = []
-    raw_train = read_tsv_file(data_path)
-    for row in raw_train[start_idx:]:
-        label = int(tokenization.convert_to_unicode(row[label_col]))
-        text_a = row[text_a_col]
-        text_b = row[text_b_col]
-        tokens_a = tokenization.convert_to_unicode(text_a)
-        tokens_b = tokenization.convert_to_unicode(text_b)
-        tokens_a = tokenizer.tokenize(tokens_a)
-        tokens_b = tokenizer.tokenize(tokens_b)
+    for row in data:
+        label = int(row[0])
+        text_a = row[1]
+        text_b = row[2]
+        tokens_a = tokenizer.tokenize(text_a)
+        tokens_b = tokenizer.tokenize(text_b)
         truncate_seq_pair(tokens_a, tokens_b, max_seq_len - 3)
         tokens = ["[CLS]"] + tokens_a + ["[SEP]"] + tokens_b + ["[SEP]"]
         input_ids = tokenizer.convert_tokens_to_ids(tokens)

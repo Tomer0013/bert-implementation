@@ -52,6 +52,7 @@ for e in range(epochs):
             loss_val = loss.item()
             optimizer.zero_grad()
             loss.backward()
+            nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0, norm_type=2)
             optimizer.step()
             sched_warmup.step()
             sched_decay.step()

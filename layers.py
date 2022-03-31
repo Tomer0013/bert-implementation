@@ -28,14 +28,14 @@ class MultiHeadAttention(nn.Module):
     def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         n, t, d = x.shape
 
-        q = self.q_proj(x).view(n, self.num_heads, t, d // self.num_heads)
-        k = self.k_proj(x).view(n, self.num_heads, t, d // self.num_heads)
-        v = self.v_proj(x).view(n, self.num_heads, t, d // self.num_heads)
+        q = self.q_proj(x).view(n, t, self.num_heads, d // self.num_heads).transpose(1, 2)
+        k = self.k_proj(x).view(n, t, self.num_heads, d // self.num_heads).transpose(1, 2)
+        v = self.v_proj(x).view(n, t, self.num_heads, d // self.num_heads).transpose(1, 2)
 
         s = q.matmul(k.transpose(-2, -1)) / math.sqrt(d // self.num_heads)
         s = masked_softmax(s, mask.view(n, 1, 1, -1))
         s = torch.dropout(s, self.attn_drop_prob, self.training)
-        a = s.matmul(v).view(n, t, -1)
+        a = s.matmul(v).transpose(1, 2).contiguous().view(n, t, -1)
         x = self.o_proj(a)
 
         return x

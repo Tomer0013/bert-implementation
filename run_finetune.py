@@ -29,7 +29,7 @@ dev_loader = data.DataLoader(dev_dataset, batch_size=batch_size, num_workers=num
 optimizer = torch.optim.AdamW(model.parameters(), lr=2e-5, eps=1e-6, weight_decay=1e-2)
 
 
-epochs = 1
+epochs = 3
 # num_train_steps = int(len(train_dataset) / (batch_size * epochs))
 # num_warmup_steps = int(num_train_steps * warmup_proportion)
 # sched_decay = torch.optim.lr_scheduler.LinearLR(optimizer, total_iters=num_train_steps, start_factor=1, end_factor=0)

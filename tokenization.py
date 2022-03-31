@@ -123,7 +123,7 @@ class WordpieceTokenizer:
         self.unk_token = unk_token
         self.max_input_chars_per_word = max_input_chars_per_word
 
-    def tokenize(self, text: list) -> list:
+    def tokenize(self, text: str) -> list:
         text = convert_to_unicode(text)
 
         output_tokens = []

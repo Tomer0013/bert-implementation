@@ -1,5 +1,6 @@
 import csv
-
+import numpy as np
+import random
 import torch
 import torch.nn.functional as F
 
@@ -110,6 +111,13 @@ def get_device() -> str:
         device = 'cuda'
 
     return device
+
+
+def set_random_seed(seed: int) -> None:
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
 
 
 # def check_accuracy(loader, model, device):

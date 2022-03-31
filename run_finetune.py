@@ -6,9 +6,10 @@ import torch.utils.data as data
 from tqdm import tqdm
 from models import BertClassifier
 from tasks import mrpc_task
-from utils import get_device
+from utils import get_device, set_random_seed
 
 
+set_random_seed(13)
 device = get_device()
 num_workers = 4
 batch_size = 32
@@ -30,10 +31,12 @@ optimizer = torch.optim.AdamW(model.parameters(), lr=2e-5, eps=1e-6, weight_deca
 
 
 epochs = 3
-# num_train_steps = int(len(train_dataset) / (batch_size * epochs))
-# num_warmup_steps = int(num_train_steps * warmup_proportion)
-# sched_decay = torch.optim.lr_scheduler.LinearLR(optimizer, total_iters=num_train_steps, start_factor=1, end_factor=0)
-# sched_warmup = torch.optim.lr_scheduler.LinearLR(optimizer, total_iters=num_warmup_steps, start_factor=1e-10, end_factor=1)
+num_train_steps = int((len(train_dataset) * epochs) / batch_size)
+num_warmup_steps = int(num_train_steps * warmup_proportion)
+sched_decay = torch.optim.lr_scheduler.LinearLR(optimizer, total_iters=num_train_steps,
+                                                start_factor=1, end_factor=0)
+sched_warmup = torch.optim.lr_scheduler.LinearLR(optimizer, total_iters=num_warmup_steps,
+                                                 start_factor=1e-10, end_factor=1)
 
 for e in range(epochs):
     model.train()
@@ -50,15 +53,15 @@ for e in range(epochs):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            # sched_warmup.step()
-            # sched_decay.step()
+            sched_warmup.step()
+            sched_decay.step()
             progress_bar.update(batch_size)
             progress_bar.set_postfix(epoch=e, NLL=loss_val)
 
     # eval
     num_correct = 0
     num_samples = 0
-    acc_loss = 0
+    acc_loss = []
     model.eval()
     with torch.no_grad():
         for batch in dev_loader:
@@ -68,12 +71,12 @@ for e in range(epochs):
             labels = labels.to(device)
             logits = model(input_ids, token_type_ids)
             log_probs = torch.log_softmax(logits, dim=-1)
-            acc_loss += torch.nn.functional.nll_loss(log_probs, labels, reduction='sum').item()
+            acc_loss.append(torch.nn.functional.nll_loss(log_probs, labels).item())
             _, preds = logits.max(-1)
             num_correct += (preds == labels).sum().item()
             num_samples += len(labels)
     print(f"Dev set accuracy: {num_correct / num_samples}")
-    print(f"Dev set nll loss: {np.mean(acc_loss / len(dev_dataset))}")
+    print(f"Dev set nll loss: {np.mean(acc_loss)}")
 
 
 

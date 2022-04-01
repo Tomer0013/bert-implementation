@@ -1,15 +1,12 @@
-import os.path
-
-import numpy as np
-import torch.nn as nn
-import torch.nn.functional
-import torch.utils.data as data
+import os
+import torch
 
 from tqdm import tqdm
 from models import BertClassifier
 from tasks import get_task_items
 from utils import get_device, set_random_seed
 from args import get_args
+
 
 # Get args
 args = get_args()
@@ -33,11 +30,11 @@ model = BertClassifier(ckpt_path=ckpt_path, hidden_size=768, num_layers=12, num_
                        num_embeddings=30522, max_seq_len=512, drop_prob=0.1, attn_drop_prob=0.1, num_classes=2)
 model.to(device)
 train_dataset, dev_dataset, task_eval_metrics = get_task_items(task_name, datasets_path, vocab_path, max_seq_len)
-train_loader = data.DataLoader(train_dataset,
-                               batch_size=batch_size,
-                               shuffle=True,
-                               num_workers=num_workers)
-dev_loader = data.DataLoader(dev_dataset, batch_size=batch_size, num_workers=num_workers)
+train_loader = torch.utils.data.DataLoader(train_dataset,
+                                           batch_size=batch_size,
+                                           shuffle=True,
+                                           num_workers=num_workers)
+dev_loader = torch.utils.data.DataLoader(dev_dataset, batch_size=batch_size, num_workers=num_workers)
 optimizer = torch.optim.AdamW(model.parameters(), lr=lr, eps=opt_eps, weight_decay=l2_wd)
 num_train_steps = int((len(train_dataset) * epochs) / batch_size)
 num_warmup_steps = int(num_train_steps * warmup_prop)
@@ -62,7 +59,7 @@ for e in range(epochs):
             loss_val = loss.item()
             optimizer.zero_grad()
             loss.backward()
-            nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0, norm_type=2)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0, norm_type=2)
             optimizer.step()
             sched_warmup.step()
             sched_decay.step()

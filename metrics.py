@@ -33,10 +33,3 @@ def recall(preds: list, labels: list) -> float:
     rec = np.mean(preds[labels == 1] == labels[labels == 1])
 
     return rec
-
-
-
-
-
-
-

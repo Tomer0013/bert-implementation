@@ -16,7 +16,11 @@ def accuracy(preds: list, labels: list) -> float:
 
 def f1_score(preds: list, labels: list) -> float:
 
-    return (precision(preds, labels) + recall(preds, labels)) / 2
+    prec = precision(preds, labels)
+    rec = recall(preds, labels)
+    score = 2 * (prec * rec) / (prec + rec)
+
+    return score
 
 
 def precision(preds: list, labels: list) -> float:

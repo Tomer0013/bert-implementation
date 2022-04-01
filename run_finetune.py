@@ -25,11 +25,14 @@ vocab_path = os.path.join(args.pretrained_model_path, "vocab.txt")
 ckpt_path = os.path.join(args.pretrained_model_path, "bert_model.ckpt")
 
 # Init
+num_classes, train_dataset, dev_dataset, task_eval_metrics = get_task_items(task_name, datasets_path,
+                                                                            vocab_path, max_seq_len)
 device = get_device()
-model = BertClassifier(ckpt_path=ckpt_path, hidden_size=768, num_layers=12, num_attn_heads=12, intermediate_size=3072,
-                       num_embeddings=30522, max_seq_len=512, drop_prob=0.1, attn_drop_prob=0.1, num_classes=2)
+model = BertClassifier(ckpt_path=ckpt_path, hidden_size=768, num_layers=12,
+                       num_attn_heads=12, intermediate_size=3072,
+                       num_embeddings=30522, max_seq_len=512, drop_prob=0.1,
+                       attn_drop_prob=0.1, num_classes=num_classes)
 model.to(device)
-train_dataset, dev_dataset, task_eval_metrics = get_task_items(task_name, datasets_path, vocab_path, max_seq_len)
 train_loader = torch.utils.data.DataLoader(train_dataset,
                                            batch_size=batch_size,
                                            shuffle=True,

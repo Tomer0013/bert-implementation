@@ -1,9 +1,9 @@
 import argparse
 
 
-def get_args():
+def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--task",
+    parser.add_argument("task",
                         type=str,
                         help="Type of fine-tuning task.")
     parser.add_argument("--batch_size",
@@ -49,7 +49,7 @@ def get_args():
     parser.add_argument("--datasets_path",
                         type=str,
                         default="./datasets/",
-                        help="Path of the folder with the GLUE and SQUAD datasets.")
+                        help="Path of the folder containing the GLUE and SQUAD datasets.")
     args = parser.parse_args()
 
     return args

@@ -13,7 +13,7 @@ def truncate_seq_pair(tokens_a: list, tokens_b: list, max_length: int) -> None:
             tokens_b.pop()
 
 
-def prep_sentence_pairs_data(data: list, vocab_path: str, max_seq_len: int):
+def prep_sentence_pairs_data(data: list, vocab_path: str, max_seq_len: int) -> tuple:
     tokenizer = tokenization.FullTokenizer(vocab_path)
     input_ids_list = []
     token_type_ids_list = []

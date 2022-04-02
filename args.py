@@ -3,8 +3,9 @@ import argparse
 
 def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("task",
+    parser.add_argument("--task_name",
                         type=str,
+                        default=None,
                         help="Type of fine-tuning task.")
     parser.add_argument("--batch_size",
                         type=int,

@@ -8,8 +8,9 @@ from metrics import accuracy, f1_score
 
 
 def get_task_items(task_name: str, datasets_path: str, vocab_path: str, max_seq_len: int) -> tuple:
+    assert task_name is not None, "Enter task_name."
     task = task_name.lower()
-    assert task in ["mrpc", "mnli", "cola"], "Invalid task."
+    assert task in ["mrpc", "mnli", "cola"], f"Invalid task_name: {task}"
 
     if task == "mrpc":
         return mrpc_task(datasets_path, vocab_path, max_seq_len)

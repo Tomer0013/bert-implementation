@@ -10,7 +10,7 @@ from args import get_args
 
 # Get args
 args = get_args()
-task_name = args.task
+task_name = args.task_name
 set_random_seed(args.random_seed)
 num_workers = args.num_workers_dataloader
 batch_size = args.batch_size

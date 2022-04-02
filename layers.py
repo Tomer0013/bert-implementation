@@ -145,7 +145,3 @@ class WordEmbeddings(nn.Module):
         x = torch.dropout(x, self.drop_prob, self.training)
 
         return x
-
-
-
-

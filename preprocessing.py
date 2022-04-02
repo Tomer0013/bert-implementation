@@ -19,7 +19,7 @@ def prep_sentence_pairs_data(data: list, vocab_path: str, max_seq_len: int) -> t
     token_type_ids_list = []
     labels = []
     for row in data:
-        label = int(row[0])
+        label = float(row[0])
         text_a = row[1]
         text_b = row[2]
         tokens_a = tokenizer.tokenize(text_a)
@@ -43,7 +43,7 @@ def prep_single_sentence_data(data: list, vocab_path: str, max_seq_len: int) -> 
     token_type_ids_list = []
     labels = []
     for row in data:
-        label = int(row[0])
+        label = float(row[0])
         text = row[1]
         tokens = tokenizer.tokenize(text)
         tokens = tokens[:max_seq_len-2]

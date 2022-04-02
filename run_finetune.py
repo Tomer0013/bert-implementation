@@ -25,8 +25,8 @@ vocab_path = os.path.join(args.pretrained_model_path, "vocab.txt")
 ckpt_path = os.path.join(args.pretrained_model_path, "bert_model.ckpt")
 
 # Init
-num_classes, train_dataset, dev_dataset, task_eval_metrics = get_task_items(task_name, datasets_path,
-                                                                            vocab_path, max_seq_len)
+num_classes, train_dataset, dev_dataset, \
+    task_eval_metrics, loss_function = get_task_items(task_name, datasets_path, vocab_path, max_seq_len)
 device = get_device()
 model = BertClassifier(ckpt_path=ckpt_path, hidden_size=768, num_layers=12,
                        num_attn_heads=12, intermediate_size=3072,
@@ -57,8 +57,7 @@ for e in range(epochs):
             token_type_ids = token_type_ids.to(device)
             labels = labels.to(device)
             logits = model(input_ids, token_type_ids)
-            log_probs = torch.log_softmax(logits, dim=-1)
-            loss = torch.nn.functional.nll_loss(log_probs, labels)
+            loss = loss_function(logits, labels)
             loss_val = loss.item()
             optimizer.zero_grad()
             loss.backward()
@@ -68,10 +67,10 @@ for e in range(epochs):
             sched_decay.step()
             global_step += 1
             progress_bar.update(batch_size)
-            progress_bar.set_postfix(epoch=e, NLL=loss_val)
+            progress_bar.set_postfix(epoch=e, train_loss=loss_val)
 
     # eval
-    acc_loss = 0
+    dev_loss = 0
     preds_list = []
     labels_list = []
     model.eval()
@@ -82,14 +81,16 @@ for e in range(epochs):
             token_type_ids = token_type_ids.to(device)
             labels = labels.to(device)
             logits = model(input_ids, token_type_ids)
-            log_probs = torch.log_softmax(logits, dim=-1)
-            acc_loss += torch.nn.functional.nll_loss(log_probs, labels, reduction='sum').item()
-            preds_list += logits.max(dim=-1)[1].tolist()
+            dev_loss += loss_function(logits, labels, reduction='sum').item()
+            if len(logits.shape) == 1:
+                preds_list += logits.tolist()
+            else:
+                preds_list += logits.max(dim=-1)[1].tolist()
             labels_list += labels.tolist()
     print("\n***** Eval results *****")
     for eval_type, eval_func in task_eval_metrics:
         print(f"eval_{eval_type}: {eval_func(preds_list, labels_list):.6f}")
-    print(f"eval_loss: {acc_loss / len(dev_dataset):.6f}")
+    print(f"eval_loss: {dev_loss / len(dev_dataset):.6f}")
     print(f"global_step: {global_step}")
 
 

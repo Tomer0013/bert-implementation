@@ -37,3 +37,17 @@ def recall(preds: list, labels: list) -> float:
     rec = np.mean(preds[labels == 1] == labels[labels == 1])
 
     return rec
+
+
+def spearman_corr(x: list, y: list) -> float:
+    x = np.array(x)
+    y = np.array(y)
+    n = len(x)
+    rank_x = np.zeros(n)
+    rank_y = np.zeros(n)
+    rank_x[np.argsort(x)] = np.arange(n) + 1
+    rank_y[np.argsort(y)] = np.arange(n) + 1
+    d_2 = (rank_x - rank_y) ** 2
+    rho = 1 - (6 * np.sum(d_2)) / (n * (n ** 2 - 1))
+
+    return rho

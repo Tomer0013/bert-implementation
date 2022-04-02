@@ -51,6 +51,7 @@ class BERT(nn.Module):
 class BertClassifier(nn.Module):
     """
     BERT Model with another linear layer at the end, for the classification task.
+    If num_classes = 1, this turns into a regressor (needed for STS-B task).
     
     Args:
         ckpt_path (str): Path to pretrained weights.
@@ -62,7 +63,7 @@ class BertClassifier(nn.Module):
         max_seq_len (int): Maximum possible sequence length.
         drop_prob (float): Dropout probability.
         attn_drop_prob (float): Droput probability within the attention after the softmax.
-        num_classes (int): Number of classes in the classifying task.
+        num_classes (int): Number of classes in the classifying task. This is basically the output dim.
     """
 
     def __init__(self, ckpt_path: str, hidden_size: int, num_layers: int, num_attn_heads: int,
@@ -82,5 +83,7 @@ class BertClassifier(nn.Module):
         x = self.bert.get_pooled_output(input_ids, token_type_ids)
         x = torch.dropout(x, self.drop_prob, self.training)
         x = self.output_layer(x)
+        if x.shape[1] == 1:
+            x = x.squeeze()
 
         return x

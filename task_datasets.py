@@ -38,7 +38,7 @@ class GlueDataset(Dataset):
         return example
 
 
-class SquadDataset(Dataset):
+class SQuADDataset(Dataset):
     """
     Dataset for the SQuAD task.
 
@@ -50,7 +50,7 @@ class SquadDataset(Dataset):
     """
     def __init__(self, input_ids: np.ndarray, token_type_ids: np.ndarray,
                  start_labels: np.ndarray, end_labels: np.ndarray) -> None:
-        super(SquadDataset, self).__init__()
+        super(SQuADDataset, self).__init__()
         self.input_ids = torch.from_numpy(input_ids).long()
         self.token_type_ids = torch.from_numpy(token_type_ids).long()
         self.start_labels = torch.from_numpy(start_labels).long()

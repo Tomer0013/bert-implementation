@@ -89,7 +89,7 @@ class BertClassifier(nn.Module):
         return x
 
 
-class SquadBert(nn.Module):
+class SQuADBert(nn.Module):
     """
     BERT Model for the SQuAD task.
 
@@ -108,7 +108,7 @@ class SquadBert(nn.Module):
     def __init__(self, ckpt_path: str, hidden_size: int, num_layers: int, num_attn_heads: int,
                  intermediate_size: int, num_embeddings: int, max_seq_len: int,
                  drop_prob: float, attn_drop_prob: float) -> None:
-        super(SquadBert, self).__init__()
+        super(SQuADBert, self).__init__()
         self.bert = BERT(hidden_size=hidden_size, num_layers=num_layers, num_attn_heads=num_attn_heads,
                          intermediate_size=intermediate_size, num_embeddings=num_embeddings,
                          max_seq_len=max_seq_len, drop_prob=drop_prob, attn_drop_prob=attn_drop_prob)

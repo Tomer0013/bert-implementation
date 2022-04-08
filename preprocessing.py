@@ -90,9 +90,17 @@ class SQuADDataHandler:
         train_path = os.path.join(self.data_path, file_name)
         examples = self._load_squad_examples(train_path)
         features = self._examples_to_features(examples, False)
-        train_dataset = self._features_to_dataset(features)
+        train_dataset = self._features_to_dataset(features, False)
 
         return train_dataset
+
+    def get_dev_dataset(self, file_name: str = "dev-v2.0.json") -> SQuADDataset:
+        dev_path = os.path.join(self.data_path, file_name)
+        examples = self._load_squad_examples(dev_path)
+        features = self._examples_to_features(examples, True)
+        dev_dataset = self._features_to_dataset(features, True)
+
+        return dev_dataset
 
     @staticmethod
     def _is_whitespace(c: str) -> bool:
@@ -270,8 +278,9 @@ class SQuADDataHandler:
                     end_position = 0
 
                 if for_eval:
-                    features.append((tokens, token_to_orig_map, token_is_max_context,
-                                     input_ids, segment_ids, start_position, end_position))
+                    features.append((input_ids, segment_ids, start_position, end_position,
+                                     tokens, token_to_orig_map, token_is_max_context,
+                                     example['doc_tokens'], example['orig_answer_text']))
                 else:
                     features.append((input_ids, segment_ids, start_position, end_position))
 
@@ -352,21 +361,35 @@ class SQuADDataHandler:
         return input_start, input_end
 
     @staticmethod
-    def _features_to_dataset(features: list) -> SQuADDataset:
+    def _features_to_dataset(features: list, for_eval: bool) -> SQuADDataset:
         input_ids = []
         token_type_ids = []
         start_labels = []
         end_labels = []
+        eval_items = None
+        if for_eval:
+            eval_items = []
         for feature in features:
             input_ids.append(feature[0])
             token_type_ids.append(feature[1])
             start_labels.append(feature[2])
             end_labels.append(feature[3])
+            if for_eval:
+                eval_items.append({
+                    'tokens': feature[4],
+                    'token_to_orig_map': feature[5],
+                    'token_is_max_context': feature[6],
+                    'doc_tokens': feature[7],
+                    'orig_answer_text': feature[8]
+                })
         input_ids = np.array(input_ids)
         token_type_ids = np.array(token_type_ids)
         start_labels = np.array(start_labels)
         end_labels = np.array(end_labels)
-        dataset = SQuADDataset(input_ids, token_type_ids, start_labels, end_labels)
+        if for_eval:
+            dataset = SQuADDataset(input_ids, token_type_ids, start_labels, end_labels, eval_items)
+        else:
+            dataset = SQuADDataset(input_ids, token_type_ids, start_labels, end_labels)
 
         return dataset
 

@@ -398,10 +398,11 @@ class SQuADOpsHandler:
     @staticmethod
     def logits_to_pred_indices(s_scores: torch.Tensor, e_scores: torch.Tensor) -> list:
         seq_len = s_scores.shape[1]
+        to_keep = (seq_len**2 - seq_len) // 2
         scores = s_scores.unsqueeze(dim=2) + e_scores.unsqueeze(dim=1)
         scores = torch.triu(scores, diagonal=1)
         sorted_arg_lists = torch.argsort(
-            scores.view(scores.shape[0], -1), dim=1, descending=True)[:, :1000].tolist()
+            scores.view(scores.shape[0], -1)[:, :to_keep], dim=1, descending=True).tolist()
         sorted_indices_lists = []
         for arg_list in sorted_arg_lists:
             sorted_indices_lists.append([(arg // seq_len, arg % seq_len) for arg in arg_list])
@@ -437,17 +438,18 @@ class SQuADOpsHandler:
 
         return final_answers
 
-    def _are_pred_indices_valid(self, start_index: int, end_index: int, eval_items_for_expample: dict) -> bool:
-        if start_index >= len(eval_items_for_expample['tokens']):
+    def _are_pred_indices_valid(self, start_index: int, end_index: int, eval_items_for_example: dict) -> bool:
+        if start_index >= len(eval_items_for_example['tokens']):
             return False
-        if end_index >= len(eval_items_for_expample['tokens']):
+        if end_index >= len(eval_items_for_example['tokens']):
             return False
-        if start_index not in eval_items_for_expample['token_to_orig_map']:
+        if start_index not in eval_items_for_example['token_to_orig_map']:
             return False
-        if end_index not in eval_items_for_expample['token_to_orig_map']:
+        if end_index not in eval_items_for_example['token_to_orig_map']:
             return False
-        if not eval_items_for_expample['token_is_max_context'].get(start_index, False):
-            return False
+        # if not eval_items_for_expample['token_is_max_context'].get(start_index, False):
+        #     print(5)
+        #     return False
         if end_index < start_index:
             return False
         length = end_index - start_index + 1

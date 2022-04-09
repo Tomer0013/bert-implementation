@@ -10,6 +10,7 @@ from args import get_squad_args
 from torch.nn.functional import cross_entropy
 from metrics import squad_compute_em, squad_compute_f1
 
+
 # Get args
 args = get_squad_args()
 set_random_seed(args.random_seed)

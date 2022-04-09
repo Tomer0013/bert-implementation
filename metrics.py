@@ -4,6 +4,10 @@ might as well go all the way :)
 """
 
 import numpy as np
+import re
+import string
+
+from collections import Counter
 
 
 def accuracy(preds: list, labels: list) -> float:
@@ -51,3 +55,55 @@ def spearman_corr(x: list, y: list) -> float:
     rho = 1 - (6 * np.sum(d_2)) / (n * (n ** 2 - 1))
 
     return rho
+
+
+# All methods below this line are from the official SQuAD 2.0 eval script.
+# I have added a "squad_" prefix for the EM and F1 functions.
+# https://worksheets.codalab.org/rest/bundles/0x6b567e1cf2e041ec80d7098f031c5c9e/contents/blob/
+def normalize_answer(s: str) -> str:
+    """Convert to lowercase and remove punctuation, articles and extra whitespace."""
+
+    def remove_articles(text: str) -> str:
+        regex = re.compile(r'\b(a|an|the)\b', re.UNICODE)
+        return re.sub(regex, ' ', text)
+
+    def white_space_fix(text: str) -> str:
+        return ' '.join(text.split())
+
+    def remove_punc(text: str) -> str:
+        exclude = set(string.punctuation)
+        return ''.join(ch for ch in text if ch not in exclude)
+
+    def lower(text: str) -> str:
+        return text.lower()
+
+    return white_space_fix(remove_articles(remove_punc(lower(s))))
+
+
+def get_tokens(s: str) -> list:
+    if not s:
+        return []
+
+    return normalize_answer(s).split()
+
+
+def squad_compute_em(a_gold: str, a_pred: str) -> int:
+
+    return int(normalize_answer(a_gold) == normalize_answer(a_pred))
+
+
+def squad_compute_f1(a_gold: str, a_pred: str) -> float:
+    gold_toks = get_tokens(a_gold)
+    pred_toks = get_tokens(a_pred)
+    common = Counter(gold_toks) & Counter(pred_toks)
+    num_same = sum(common.values())
+    if len(gold_toks) == 0 or len(pred_toks) == 0:
+        # If either is no-answer, then F1 is 1 if they agree, 0 otherwise
+        return int(gold_toks == pred_toks)
+    if num_same == 0:
+        return 0
+    precision = 1.0 * num_same / len(pred_toks)
+    recall = 1.0 * num_same / len(gold_toks)
+    f1 = (2 * precision * recall) / (precision + recall)
+
+    return f1

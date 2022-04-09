@@ -4,6 +4,8 @@ import torch
 import tokenization
 import json
 import collections
+import string
+import re
 
 from task_datasets import SQuADDataset
 
@@ -539,5 +541,6 @@ class SQuADOpsHandler:
         ns_text = "".join(ns_chars)
 
         return ns_text, ns_to_s_map
+
 
 

@@ -1,6 +1,6 @@
-import os.path
-
+import os
 import numpy as np
+import torch
 import tokenization
 import json
 import collections
@@ -65,9 +65,9 @@ def prep_single_sentence_data(data: list, vocab_path: str, max_seq_len: int) -> 
     return np.array(input_ids_list), np.array(token_type_ids_list), np.array(labels)
 
 
-class SQuADDataHandler:
+class SQuADOpsHandler:
     """
-    An object for handling all squad data related ops.
+    An object for handling all squad data related ops for loading data, preprocessing, and predictions.
 
     Args:
         max_context_length (int): Maximum possible context length in one example.
@@ -77,14 +77,16 @@ class SQuADDataHandler:
         data_path (str): Path to folder containing the train and dev datastets.
         vocab_path (str): Path to vocab file for the tokenizer.
     """
-    def __init__(self, max_context_length: int, max_query_length: int, doc_stride: int,
-                 use_squad_v1: bool, data_path: str, vocab_path: str) -> None:
+    def __init__(self, max_context_length: int, max_query_length: int, doc_stride: int, max_answer_length: int,
+                 use_squad_v1: bool, do_lower_case: bool, data_path: str, vocab_path: str) -> None:
         self.max_context_length = max_context_length
         self.max_query_length = max_query_length
         self.doc_stride = doc_stride
-        self.tokenizer = tokenization.FullTokenizer(vocab_path)
+        self.max_answer_length = max_answer_length
         self.use_squad_v1 = use_squad_v1
+        self.do_lower_case = do_lower_case
         self.data_path = data_path
+        self.tokenizer = tokenization.FullTokenizer(vocab_path)
 
     def get_train_dataset(self, file_name: str = "train-v2.0.json") -> SQuADDataset:
         train_path = os.path.join(self.data_path, file_name)
@@ -392,5 +394,150 @@ class SQuADDataHandler:
             dataset = SQuADDataset(input_ids, token_type_ids, start_labels, end_labels)
 
         return dataset
+
+    def preds_to_final_answers(self, preds: tuple, eval_items: list) -> list:
+        s_scores, e_scores = preds
+        seq_len = s_scores.shape[1]
+        scores = s_scores.unsqueeze(dim=2) + e_scores.unsqueeze(dim=1)
+        scores = torch.triu(scores, diagonal=1)
+        sorted_arg_lists = torch.argsort(
+            scores.view(scores.shape[0], -1), dim=1, descending=True).tolist()
+        sorted_indices_lists = []
+        for arg_list in sorted_arg_lists:
+            sorted_indices_lists.append([(arg // seq_len, arg % seq_len) for arg in arg_list])
+
+        final_answers = []
+        for idx, indices_list in enumerate(sorted_indices_lists):
+            eval_items_for_example = eval_items[idx]
+            for pred_start, pred_end in indices_list:
+                if not self._are_pred_indices_valid(pred_start, pred_end, eval_items_for_example):
+                    continue
+                tok_tokens = eval_items_for_example['tokens'][pred_start: pred_end + 1]
+                orig_doc_start = eval_items_for_example['token_to_orig_map'][pred_start]
+                orig_doc_end = eval_items_for_example['token_to_orig_map'][pred_end]
+                orig_tokens = eval_items_for_example['doc_tokens'][orig_doc_start: orig_doc_end + 1]
+                tok_text = " ".join(tok_tokens)
+
+                # De-tokenize WordPieces that have been split off.
+                tok_text = tok_text.replace(" ##", "")
+                tok_text = tok_text.replace("##", "")
+
+                # Clean whitespace
+                tok_text = tok_text.strip()
+                tok_text = " ".join(tok_text.split())
+                orig_text = " ".join(orig_tokens)
+
+                final_text = self._get_final_text(tok_text, orig_text)
+
+                final_answers.append(final_text)
+                break
+
+        return final_answers
+
+    def _are_pred_indices_valid(self, start_index: int, end_index: int, eval_items_for_expample: dict) -> bool:
+        if start_index >= len(eval_items_for_expample['tokens']):
+            return False
+        if end_index >= len(eval_items_for_expample['tokens']):
+            return False
+        if start_index not in eval_items_for_expample['token_to_orig_map']:
+            return False
+        if end_index not in eval_items_for_expample['token_to_orig_map']:
+            return False
+        if not eval_items_for_expample['token_is_max_context'].get(start_index, False):
+            return False
+        if end_index < start_index:
+            return False
+        length = end_index - start_index + 1
+        if length > self.max_answer_length:
+            return False
+
+        return True
+
+    def _get_final_text(self, pred_text: str, orig_text: str) -> str:
+        """Project the tokenized prediction back to the original text."""
+
+        # When we created the data, we kept track of the alignment between original
+        # (whitespace tokenized) tokens and our WordPiece tokenized tokens. So
+        # now `orig_text` contains the span of our original text corresponding to the
+        # span that we predicted.
+        #
+        # However, `orig_text` may contain extra characters that we don't want in
+        # our prediction.
+        #
+        # For example, let's say:
+        #   pred_text = steve smith
+        #   orig_text = Steve Smith's
+        #
+        # We don't want to return `orig_text` because it contains the extra "'s".
+        #
+        # We don't want to return `pred_text` because it's already been normalized
+        # (the SQuAD eval script also does punctuation stripping/lower casing but
+        # our tokenizer does additional normalization like stripping accent
+        # characters).
+        #
+        # What we really want to return is "Steve Smith".
+        #
+        # Therefore, we have to apply a semi-complicated alignment heruistic between
+        # `pred_text` and `orig_text` to get a character-to-charcter alignment. This
+        # can fail in certain cases in which case we just return `orig_text`.
+
+        # We first tokenize `orig_text`, strip whitespace from the result
+        # and `pred_text`, and check if they are the same length. If they are
+        # NOT the same length, the heuristic has failed. If they are the same
+        # length, we assume the characters are one-to-one aligned.
+
+        tokenizer = tokenization.BasicTokenizer(do_lower_case=self.do_lower_case)
+
+        tok_text = " ".join(tokenizer.tokenize(orig_text))
+
+        start_position = tok_text.find(pred_text)
+        if start_position == -1:
+            return orig_text
+        end_position = start_position + len(pred_text) - 1
+
+        orig_ns_text, orig_ns_to_s_map = self._strip_spaces(orig_text)
+        tok_ns_text, tok_ns_to_s_map = self._strip_spaces(tok_text)
+
+        if len(orig_ns_text) != len(tok_ns_text):
+            return orig_text
+
+        # We then project the characters in `pred_text` back to `orig_text` using
+        # the character-to-character alignment.
+        tok_s_to_ns_map = {v: k for k, v in tok_ns_to_s_map.items()}
+
+        orig_start_position = None
+        if start_position in tok_s_to_ns_map:
+            ns_start_position = tok_s_to_ns_map[start_position]
+            if ns_start_position in orig_ns_to_s_map:
+                orig_start_position = orig_ns_to_s_map[ns_start_position]
+
+        if orig_start_position is None:
+            return orig_text
+
+        orig_end_position = None
+        if end_position in tok_s_to_ns_map:
+            ns_end_position = tok_s_to_ns_map[end_position]
+            if ns_end_position in orig_ns_to_s_map:
+                orig_end_position = orig_ns_to_s_map[ns_end_position]
+
+        if orig_end_position is None:
+            return orig_text
+
+        output_text = orig_text[orig_start_position:(orig_end_position + 1)]
+
+        return output_text
+
+    @staticmethod
+    def _strip_spaces(text: str) -> tuple:
+        ns_chars = []
+        ns_to_s_map = collections.OrderedDict()
+        for i, c in enumerate(text):
+            if c == " ":
+                continue
+            ns_to_s_map[len(ns_chars)] = i
+            ns_chars.append(c)
+        ns_text = "".join(ns_chars)
+
+        return ns_text, ns_to_s_map
 
 

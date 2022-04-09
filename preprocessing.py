@@ -409,36 +409,32 @@ class SQuADOpsHandler:
 
         return sorted_indices_lists
 
-    def pred_indices_to_final_answers(self, sorted_indices_lists: list, eval_items: list) -> list:
+    def pred_indices_to_final_answers(self, pred_indices_list: list, eval_items: list) -> list:
         final_answers = []
-        for idx, indices_list in enumerate(sorted_indices_lists):
+        for idx, (pred_start, pred_end) in enumerate(pred_indices_list):
             eval_items_for_example = eval_items[idx]
-            for pred_start, pred_end in indices_list:
-                if not self._are_pred_indices_valid(pred_start, pred_end, eval_items_for_example):
-                    continue
-                tok_tokens = eval_items_for_example['tokens'][pred_start: pred_end + 1]
-                orig_doc_start = eval_items_for_example['token_to_orig_map'][pred_start]
-                orig_doc_end = eval_items_for_example['token_to_orig_map'][pred_end]
-                orig_tokens = eval_items_for_example['doc_tokens'][orig_doc_start: orig_doc_end + 1]
-                tok_text = " ".join(tok_tokens)
+            tok_tokens = eval_items_for_example['tokens'][pred_start: pred_end + 1]
+            orig_doc_start = eval_items_for_example['token_to_orig_map'][pred_start]
+            orig_doc_end = eval_items_for_example['token_to_orig_map'][pred_end]
+            orig_tokens = eval_items_for_example['doc_tokens'][orig_doc_start: orig_doc_end + 1]
+            tok_text = " ".join(tok_tokens)
 
-                # De-tokenize WordPieces that have been split off.
-                tok_text = tok_text.replace(" ##", "")
-                tok_text = tok_text.replace("##", "")
+            # De-tokenize WordPieces that have been split off.
+            tok_text = tok_text.replace(" ##", "")
+            tok_text = tok_text.replace("##", "")
 
-                # Clean whitespace
-                tok_text = tok_text.strip()
-                tok_text = " ".join(tok_text.split())
-                orig_text = " ".join(orig_tokens)
+            # Clean whitespace
+            tok_text = tok_text.strip()
+            tok_text = " ".join(tok_text.split())
+            orig_text = " ".join(orig_tokens)
 
-                final_text = self._get_final_text(tok_text, orig_text)
+            final_text = self._get_final_text(tok_text, orig_text)
 
-                final_answers.append(final_text)
-                break
+            final_answers.append(final_text)
 
         return final_answers
 
-    def _are_pred_indices_valid(self, start_index: int, end_index: int, eval_items_for_example: dict) -> bool:
+    def are_pred_indices_valid(self, start_index: int, end_index: int, eval_items_for_example: dict) -> bool:
         if start_index >= len(eval_items_for_example['tokens']):
             return False
         if end_index >= len(eval_items_for_example['tokens']):
@@ -447,9 +443,8 @@ class SQuADOpsHandler:
             return False
         if end_index not in eval_items_for_example['token_to_orig_map']:
             return False
-        # if not eval_items_for_expample['token_is_max_context'].get(start_index, False):
-        #     print(5)
-        #     return False
+        if not eval_items_for_example['token_is_max_context'].get(start_index, False):
+            return False
         if end_index < start_index:
             return False
         length = end_index - start_index + 1

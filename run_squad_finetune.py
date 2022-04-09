@@ -69,8 +69,9 @@ for e in range(args.epochs):
             progress_bar.set_postfix(epoch=e, train_loss=loss_val)
 
     # eval
+    idx = 0
     dev_loss = 0
-    pred_indices_lists = []
+    pred_indices_list = []
     model.eval()
     with torch.no_grad():
         for batch in dev_loader:
@@ -80,10 +81,16 @@ for e in range(args.epochs):
             start_labels = start_labels.to(device)
             end_labels = end_labels.to(device)
             start_logits, end_logits = model(input_ids, token_type_ids)
-            pred_indices_lists += squad_ops_handler.logits_to_pred_indices(start_logits, end_logits)
+            sorted_indices_lists = squad_ops_handler.logits_to_pred_indices(start_logits, end_logits)
+            for sorted_indices_list in sorted_indices_lists:
+                for pred_start, pred_end in sorted_indices_list:
+                    if squad_ops_handler.are_pred_indices_valid(pred_start, pred_end, eval_items[idx]):
+                        pred_indices_list.append((pred_start, pred_end))
+                        idx += 1
+                        break
             dev_loss += (cross_entropy(start_logits, start_labels, reduction='sum').item() +
                          cross_entropy(end_logits, end_labels, reduction='sum').item())
-    pred_answers = squad_ops_handler.pred_indices_to_final_answers(pred_indices_lists, eval_items)
+    pred_answers = squad_ops_handler.pred_indices_to_final_answers(pred_indices_list, eval_items)
     real_answers = [eval_items[idx]['orig_answer_text'] for idx in range(len(eval_items))]
     em_score = np.mean([squad_compute_em(a_real, a_pred) for a_real, a_pred in zip(real_answers, pred_answers)])
     f1_score = np.mean([squad_compute_f1(a_real, a_pred) for a_real, a_pred in zip(real_answers, pred_answers)])

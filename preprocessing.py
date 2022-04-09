@@ -4,8 +4,6 @@ import torch
 import tokenization
 import json
 import collections
-import string
-import re
 
 from task_datasets import SQuADDataset
 

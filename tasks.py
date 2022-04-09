@@ -230,6 +230,3 @@ def qqp_task(datasets_path: str, vocab_path: str, max_seq_len: int) -> tuple:
     num_classes = 2
 
     return num_classes, train_dataset, dev_dataset, eval_metrics, cross_entropy
-
-
-

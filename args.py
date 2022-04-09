@@ -116,12 +116,12 @@ def get_squad_args() -> argparse.Namespace:
                         default=128,
                         help="Window size for sliding window, when going over contexts longer than max length.")
     parser.add_argument("--do_lower_case",
-                        type=int,
-                        default=1,
-                        help="Should be 1 if model is uncased, 0 otherwise.")
+                        type=lambda s: s.lower().startswith("t"),
+                        default=True,
+                        help="Should be True if model is uncased, False otherwise.")
     parser.add_argument("--use_squad_v1",
-                        type=int,
-                        default=0,
+                        type=lambda s: s.lower().startswith("t"),
+                        default=False,
                         help="Whether to use SQuAD v1 (no questions without an answer) or not.")
     args = parser.parse_args()
 

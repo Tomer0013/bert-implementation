@@ -49,36 +49,23 @@ class SQuADDataset(Dataset):
         end_labels (np.ndarray): Positions of the end of the answer's span.
     """
     def __init__(self, input_ids: np.ndarray, token_type_ids: np.ndarray,
-                 start_labels: np.ndarray, end_labels: np.ndarray, eval_items: list = None) -> None:
+                 start_labels: np.ndarray, end_labels: np.ndarray) -> None:
         super(SQuADDataset, self).__init__()
         self.input_ids = torch.from_numpy(input_ids).long()
         self.token_type_ids = torch.from_numpy(token_type_ids).long()
         self.start_labels = torch.from_numpy(start_labels).long()
         self.end_labels = torch.from_numpy(end_labels).long()
-        self.eval_items = None
-        if eval_items:
-            self.eval_items = eval_items
 
     def __len__(self) -> int:
 
         return len(self.start_labels)
 
     def __getitem__(self, idx: int) -> tuple:
-
-        if self.eval_items:
-            example = (
-                self.input_ids[idx],
-                self.token_type_ids[idx],
-                self.start_labels[idx],
-                self.end_labels[idx],
-                self.eval_items[idx]
-            )
-        else:
-            example = (
-                self.input_ids[idx],
-                self.token_type_ids[idx],
-                self.start_labels[idx],
-                self.end_labels[idx]
-            )
+        example = (
+            self.input_ids[idx],
+            self.token_type_ids[idx],
+            self.start_labels[idx],
+            self.end_labels[idx]
+        )
 
         return example

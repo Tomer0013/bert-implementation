@@ -92,17 +92,18 @@ class SQuADOpsHandler:
         train_path = os.path.join(self.data_path, file_name)
         examples = self._load_squad_examples(train_path)
         features = self._examples_to_features(examples, False)
-        train_dataset = self._features_to_dataset(features, False)
+        train_dataset = self._features_to_dataset(features)
 
         return train_dataset
 
-    def get_dev_dataset(self, file_name: str = "dev-v2.0.json") -> SQuADDataset:
+    def get_dev_dataset_and_eval_items(self, file_name: str = "dev-v2.0.json") -> tuple:
         dev_path = os.path.join(self.data_path, file_name)
         examples = self._load_squad_examples(dev_path)
         features = self._examples_to_features(examples, True)
-        dev_dataset = self._features_to_dataset(features, True)
+        dev_dataset = self._features_to_dataset(features)
+        eval_items = self._extract_eval_items(features)
 
-        return dev_dataset
+        return dev_dataset, eval_items
 
     @staticmethod
     def _is_whitespace(c: str) -> bool:
@@ -363,49 +364,51 @@ class SQuADOpsHandler:
         return input_start, input_end
 
     @staticmethod
-    def _features_to_dataset(features: list, for_eval: bool) -> SQuADDataset:
+    def _features_to_dataset(features: list) -> SQuADDataset:
         input_ids = []
         token_type_ids = []
         start_labels = []
         end_labels = []
-        eval_items = None
-        if for_eval:
-            eval_items = []
         for feature in features:
             input_ids.append(feature[0])
             token_type_ids.append(feature[1])
             start_labels.append(feature[2])
             end_labels.append(feature[3])
-            if for_eval:
-                eval_items.append({
-                    'tokens': feature[4],
-                    'token_to_orig_map': feature[5],
-                    'token_is_max_context': feature[6],
-                    'doc_tokens': feature[7],
-                    'orig_answer_text': feature[8]
-                })
         input_ids = np.array(input_ids)
         token_type_ids = np.array(token_type_ids)
         start_labels = np.array(start_labels)
         end_labels = np.array(end_labels)
-        if for_eval:
-            dataset = SQuADDataset(input_ids, token_type_ids, start_labels, end_labels, eval_items)
-        else:
-            dataset = SQuADDataset(input_ids, token_type_ids, start_labels, end_labels)
+        dataset = SQuADDataset(input_ids, token_type_ids, start_labels, end_labels)
 
         return dataset
 
-    def preds_to_final_answers(self, preds: tuple, eval_items: list) -> list:
-        s_scores, e_scores = preds
+    @staticmethod
+    def _extract_eval_items(features: list) -> list:
+        eval_items = []
+        for feature in features:
+            eval_items.append({
+                'tokens': feature[4],
+                'token_to_orig_map': feature[5],
+                'token_is_max_context': feature[6],
+                'doc_tokens': feature[7],
+                'orig_answer_text': feature[8]
+            })
+        return eval_items
+
+    @staticmethod
+    def logits_to_pred_indices(s_scores: torch.Tensor, e_scores: torch.Tensor) -> list:
         seq_len = s_scores.shape[1]
         scores = s_scores.unsqueeze(dim=2) + e_scores.unsqueeze(dim=1)
         scores = torch.triu(scores, diagonal=1)
         sorted_arg_lists = torch.argsort(
-            scores.view(scores.shape[0], -1), dim=1, descending=True).tolist()
+            scores.view(scores.shape[0], -1), dim=1, descending=True)[:, :1000].tolist()
         sorted_indices_lists = []
         for arg_list in sorted_arg_lists:
             sorted_indices_lists.append([(arg // seq_len, arg % seq_len) for arg in arg_list])
 
+        return sorted_indices_lists
+
+    def pred_indices_to_final_answers(self, sorted_indices_lists: list, eval_items: list) -> list:
         final_answers = []
         for idx, indices_list in enumerate(sorted_indices_lists):
             eval_items_for_example = eval_items[idx]

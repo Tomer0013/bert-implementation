@@ -73,12 +73,15 @@ class SQuADOpsHandler:
         max_context_length (int): Maximum possible context length in one example.
         max_query_length (int): Maximum possible query length.
         doc_stride (int): Size of sliding window for context with a length larger than maximum length.
+        max_answer_length (int): Maximum length of answer predictions.
         use_squad_v1 (bool): Whether to use only SQuAD v1 examples or not.
+        do_lower_case (bool): Should be True if pretrained model is uncased, True otherwise.
         data_path (str): Path to folder containing the train and dev datastets.
         vocab_path (str): Path to vocab file for the tokenizer.
+        tau (float): Decision threshold between the best no-null answer and null answer. Only in SQuAD v2.0.
     """
     def __init__(self, max_context_length: int, max_query_length: int, doc_stride: int, max_answer_length: int,
-                 use_squad_v1: bool, do_lower_case: bool, data_path: str, vocab_path: str) -> None:
+                 use_squad_v1: bool, do_lower_case: bool, data_path: str, vocab_path: str, tau: float = 0.0) -> None:
         self.max_context_length = max_context_length
         self.max_query_length = max_query_length
         self.doc_stride = doc_stride
@@ -87,6 +90,9 @@ class SQuADOpsHandler:
         self.do_lower_case = do_lower_case
         self.data_path = data_path
         self.tokenizer = tokenization.FullTokenizer(vocab_path)
+        self.tau = None
+        if not use_squad_v1:
+            self.tau = tau
 
     def get_train_dataset(self, file_name: str = "train-v2.0.json") -> SQuADDataset:
         train_path = os.path.join(self.data_path, file_name)
@@ -417,7 +423,11 @@ class SQuADOpsHandler:
             for arg, prob in zip(arg_list, probs_list):
                 pred_start, pred_end = arg // seq_len, arg % seq_len
                 if self._are_pred_indices_valid(pred_start, pred_end, eval_items[idx]):
-                    pred_indices.append(((pred_start, pred_end), prob))
+                    if self.use_squad_v1:
+                        pred_indices.append(((pred_start, pred_end), prob))
+                    else:
+                        null_prob = scores[idx, 0].item()
+                        pred_indices.append(((pred_start, pred_end), prob, null_prob))
                     break
 
         return pred_indices
@@ -425,9 +435,15 @@ class SQuADOpsHandler:
     def pred_indices_to_final_answers(self, pred_indices_list: list, eval_items: list) -> dict:
         final_answers = {}
         for idx, indices_prob_tup in enumerate(pred_indices_list):
-            answer_prob = indices_prob_tup[1]
-            pred_start, pred_end = indices_prob_tup[0][0], indices_prob_tup[0][1]
             eval_items_for_example = eval_items[idx]
+            example_id = eval_items_for_example['qa_id']
+            answer_prob = indices_prob_tup[1]
+            if not self.use_squad_v1:
+                null_prob = indices_prob_tup[2]
+                if null_prob + self.tau >= answer_prob:
+                    final_answers[example_id] = ("", null_prob)
+                    continue
+            pred_start, pred_end = indices_prob_tup[0][0], indices_prob_tup[0][1]
             tok_tokens = eval_items_for_example['tokens'][pred_start: pred_end + 1]
             orig_doc_start = eval_items_for_example['token_to_orig_map'][pred_start]
             orig_doc_end = eval_items_for_example['token_to_orig_map'][pred_end]
@@ -445,7 +461,6 @@ class SQuADOpsHandler:
 
             final_text = self._get_final_text(tok_text, orig_text)
 
-            example_id = eval_items_for_example['qa_id']
             if example_id in final_answers:
                 if final_answers[example_id][1] < answer_prob:
                     final_answers[example_id] = (final_text, answer_prob)

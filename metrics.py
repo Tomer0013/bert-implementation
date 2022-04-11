@@ -57,7 +57,10 @@ def squad_compute_metric_for_eval(metric_fn, pred_answers: list, eval_items: lis
     id_answers_dict = {}
     for eval_dict in eval_items:
         if eval_dict['qa_id'] not in id_answers_dict:
-            id_answers_dict[eval_dict['qa_id']] = eval_dict['qa_all_answers']
+            if len(eval_dict['qa_all_answers']) == 0:
+                id_answers_dict[eval_dict['qa_id']] = [{'text': ""}]
+            else:
+                id_answers_dict[eval_dict['qa_id']] = eval_dict['qa_all_answers']
     for key in pred_answers.keys():
         a_pred = pred_answers[key][0]
         real_answers = [x['text'] for x in id_answers_dict[key]]

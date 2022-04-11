@@ -409,20 +409,24 @@ class SQuADOpsHandler:
         scores.masked_fill_(scores == 0, -torch.inf)
         scores = scores.view(scores.shape[0], -1)
         scores = torch.softmax(scores, dim=-1)
-        sorted_arg_lists = torch.argsort(scores, dim=1, descending=True)[:, :to_keep].tolist()
+        sorted_probs, sorted_arg_lists = torch.sort(scores, dim=1, descending=True)
+        sorted_probs = sorted_probs[:, :to_keep].tolist()
+        sorted_arg_lists = sorted_arg_lists[:, :to_keep].tolist()
         pred_indices = []
-        for idx, arg_list in enumerate(sorted_arg_lists):
-            for arg in arg_list:
+        for idx, (arg_list, probs_list) in enumerate(zip(sorted_arg_lists, sorted_probs)):
+            for arg, prob in zip(arg_list, probs_list):
                 pred_start, pred_end = arg // seq_len, arg % seq_len
                 if self._are_pred_indices_valid(pred_start, pred_end, eval_items[idx]):
-                    pred_indices.append((pred_start, pred_end))
+                    pred_indices.append(((pred_start, pred_end), prob))
                     break
 
         return pred_indices
 
     def pred_indices_to_final_answers(self, pred_indices_list: list, eval_items: list) -> list:
-        final_answers = []
-        for idx, (pred_start, pred_end) in enumerate(pred_indices_list):
+        final_answers = {}
+        for idx, indices_prob_tup in enumerate(pred_indices_list):
+            answer_prob = indices_prob_tup[1]
+            pred_start, pred_end = indices_prob_tup[0][0], indices_prob_tup[0][1]
             eval_items_for_example = eval_items[idx]
             tok_tokens = eval_items_for_example['tokens'][pred_start: pred_end + 1]
             orig_doc_start = eval_items_for_example['token_to_orig_map'][pred_start]
@@ -441,7 +445,12 @@ class SQuADOpsHandler:
 
             final_text = self._get_final_text(tok_text, orig_text)
 
-            final_answers.append(final_text)
+            example_id = eval_items_for_example['qa_id']
+            if example_id in final_answers:
+                if final_answers[example_id][1] < answer_prob:
+                    final_answers[example_id] = (final_text, answer_prob)
+            else:
+                final_answers[example_id] = (final_text, answer_prob)
 
         return final_answers
 
@@ -454,8 +463,8 @@ class SQuADOpsHandler:
             return False
         if end_index not in eval_items_for_example['token_to_orig_map']:
             return False
-        if not eval_items_for_example['token_is_max_context'].get(start_index, False):
-            return False
+        # if not eval_items_for_example['token_is_max_context'].get(start_index, False):
+        #     return False
         if end_index < start_index:
             return False
         length = end_index - start_index + 1

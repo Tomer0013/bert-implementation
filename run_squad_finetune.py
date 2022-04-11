@@ -1,6 +1,5 @@
 import os
 import torch
-import numpy as np
 
 from tqdm import tqdm
 from models import SQuADBert
@@ -8,7 +7,7 @@ from preprocessing import SQuADOpsHandler
 from utils import get_device, set_random_seed
 from args import get_squad_args
 from torch.nn.functional import cross_entropy
-from metrics import squad_compute_em, squad_compute_f1
+from metrics import squad_compute_em, squad_compute_f1, squad_compute_metric_for_eval
 
 
 # Get args
@@ -34,7 +33,7 @@ train_loader = torch.utils.data.DataLoader(train_dataset,
                                            shuffle=True,
                                            num_workers=args.num_workers_dataloader)
 dev_loader = torch.utils.data.DataLoader(dev_dataset,
-                                         batch_size=args.batch_size,
+                                         batch_size=args.dev_batch_size,
                                          shuffle=False,
                                          num_workers=args.num_workers_dataloader)
 optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, eps=args.optimizer_eps, weight_decay=args.l2_wd)
@@ -69,37 +68,30 @@ for e in range(args.epochs):
             progress_bar.update(args.batch_size)
             progress_bar.set_postfix(epoch=e, train_loss=loss_val)
 
-    torch.save(model.state_dict(), "./debug_state_dict.pt")
-
-
     # eval
-    idx = 0
     dev_loss = 0
     pred_indices_list = []
     model.eval()
     with torch.no_grad():
-        for batch in dev_loader:
+        for batch_num, batch in enumerate(dev_loader):
+            print(batch_num + 1)
             input_ids, token_type_ids, start_labels, end_labels = batch
             input_ids = input_ids.to(device)
             token_type_ids = token_type_ids.to(device)
             start_labels = start_labels.to(device)
             end_labels = end_labels.to(device)
             start_logits, end_logits = model(input_ids, token_type_ids)
-            sorted_indices_lists = squad_ops_handler.logits_to_pred_indices(start_logits, end_logits)
-            for sorted_indices_list in sorted_indices_lists:
-                for pred_start, pred_end in sorted_indices_list:
-                    if squad_ops_handler.are_pred_indices_valid(pred_start, pred_end, eval_items[idx]):
-                        pred_indices_list.append((pred_start, pred_end))
-                        idx += 1
-                        break
-            dev_loss += (cross_entropy(start_logits, start_labels, reduction='sum').item() +
-                         cross_entropy(end_logits, end_labels, reduction='sum').item())
+            dev_loss += (cross_entropy(start_logits, start_labels, reduction='sum') +
+                         cross_entropy(end_logits, end_labels, reduction='sum')).item()
+            rel_eval_items = eval_items[batch_num * args.dev_batch_size: (batch_num + 1) * args.dev_batch_size]
+            pred_indices_list += squad_ops_handler.logits_to_pred_indices(start_logits, end_logits, rel_eval_items)
     pred_answers = squad_ops_handler.pred_indices_to_final_answers(pred_indices_list, eval_items)
-    real_answers = [eval_items[idx]['orig_answer_text'] for idx in range(len(eval_items))]
-    em_score = np.mean([squad_compute_em(a_real, a_pred) for a_real, a_pred in zip(real_answers, pred_answers)])
-    f1_score = np.mean([squad_compute_f1(a_real, a_pred) for a_real, a_pred in zip(real_answers, pred_answers)])
+    em_score = squad_compute_metric_for_eval(squad_compute_em, pred_answers, eval_items)
+    f1_score = squad_compute_metric_for_eval(squad_compute_f1, pred_answers, eval_items)
     print("\n***** Eval results *****")
     print(f"eval_f1: {f1_score:.6f}")
     print(f"eval_em: {em_score:.6f}")
     print(f"eval_loss: {dev_loss / len(dev_dataset):.6f}")
     print(f"global_step: {global_step}")
+
+torch.save(model.state_dict(), "./debug_state_dict.pt")

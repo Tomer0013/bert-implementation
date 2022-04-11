@@ -56,6 +56,18 @@ def spearman_corr(x: list, y: list) -> float:
 
     return rho
 
+def squad_compute_metric_for_eval(metric_fn, pred_answers: list, eval_items: list) -> list:
+    metric_vals = []
+    id_answers_dict = {}
+    for eval_dict in eval_items:
+        if eval_dict['qa_id'] not in id_answers_dict:
+            id_answers_dict[eval_dict['qa_id']] = eval_dict['qa_all_answers']
+    for key in pred_answers.keys():
+        a_pred = pred_answers[key][0]
+        real_answers = [x['text'] for x in id_answers_dict[key]]
+        metric_vals.append(np.max([metric_fn(a_real, a_pred) for a_real in real_answers]))
+
+    return np.mean(metric_vals)
 
 # All methods below this line are from the official SQuAD 2.0 eval script.
 # I have added a "squad_" prefix for the EM and F1 functions.

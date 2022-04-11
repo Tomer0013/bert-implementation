@@ -62,7 +62,11 @@ def get_squad_args() -> argparse.Namespace:
     parser.add_argument("--batch_size",
                         type=int,
                         default=16,
-                        help="Batch size during training and eval.")
+                        help="Batch size during training.")
+    parser.add_argument("--dev_batch_size",
+                        type=int,
+                        default=256,
+                        help="Batch size during eval.")
     parser.add_argument("--lr",
                         type=float,
                         default=5e-5,

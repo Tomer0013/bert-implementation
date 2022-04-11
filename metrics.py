@@ -1,8 +1,3 @@
-"""
-Obviously sklearn metrics could have been used here, but since we're implementing everything from scratch,
-might as well go all the way :)
-"""
-
 import numpy as np
 import re
 import string
@@ -55,6 +50,7 @@ def spearman_corr(x: list, y: list) -> float:
     rho = 1 - (6 * np.sum(d_2)) / (n * (n ** 2 - 1))
 
     return rho
+
 
 def squad_compute_metric_for_eval(metric_fn, pred_answers: list, eval_items: list) -> list:
     metric_vals = []

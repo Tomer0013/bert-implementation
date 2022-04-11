@@ -74,7 +74,6 @@ for e in range(args.epochs):
     model.eval()
     with torch.no_grad():
         for batch_num, batch in enumerate(dev_loader):
-            print(batch_num + 1)
             input_ids, token_type_ids, start_labels, end_labels = batch
             input_ids = input_ids.to(device)
             token_type_ids = token_type_ids.to(device)

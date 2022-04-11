@@ -135,6 +135,8 @@ class SQuADOpsHandler:
                     char_to_word_offset.append(len(doc_tokens) - 1)
 
                 for qa in paragraph["qas"]:
+                    qa_id = qa["id"]
+                    qa_all_answers = qa["answers"]
                     question_text = qa["question"]
                     is_impossible = qa["is_impossible"]
                     if self.use_squad_v1:
@@ -168,7 +170,9 @@ class SQuADOpsHandler:
                                      'orig_answer_text': orig_answer_text,
                                      'start_position': start_position,
                                      'end_position': end_position,
-                                     'is_impossible': is_impossible})
+                                     'is_impossible': is_impossible,
+                                     'qa_id': qa_id,
+                                     'qa_all_answers': qa_all_answers})
 
         return examples
 
@@ -281,8 +285,8 @@ class SQuADOpsHandler:
                     end_position = 0
 
                 if for_eval:
-                    features.append((input_ids, segment_ids, start_position, end_position,
-                                     tokens, token_to_orig_map, token_is_max_context,
+                    features.append((input_ids, segment_ids, start_position, end_position, example['qa_id'],
+                                     example['qa_all_answers'], tokens, token_to_orig_map, token_is_max_context,
                                      example['doc_tokens'], example['orig_answer_text']))
                 else:
                     features.append((input_ids, segment_ids, start_position, end_position))
@@ -387,27 +391,34 @@ class SQuADOpsHandler:
         eval_items = []
         for feature in features:
             eval_items.append({
-                'tokens': feature[4],
-                'token_to_orig_map': feature[5],
-                'token_is_max_context': feature[6],
-                'doc_tokens': feature[7],
-                'orig_answer_text': feature[8]
+                'qa_id': feature[4],
+                'qa_all_answers': feature[5],
+                'tokens': feature[6],
+                'token_to_orig_map': feature[7],
+                'token_is_max_context': feature[8],
+                'doc_tokens': feature[9],
+                'orig_answer_text': feature[10]
             })
         return eval_items
 
-    @staticmethod
-    def logits_to_pred_indices(s_scores: torch.Tensor, e_scores: torch.Tensor) -> list:
+    def logits_to_pred_indices(self, s_scores: torch.Tensor, e_scores: torch.Tensor, eval_items: dict) -> list:
         seq_len = s_scores.shape[1]
         to_keep = (seq_len**2 - seq_len) // 2
         scores = s_scores.unsqueeze(dim=2) + e_scores.unsqueeze(dim=1)
         scores = torch.triu(scores, diagonal=1)
-        sorted_arg_lists = torch.argsort(
-            scores.view(scores.shape[0], -1)[:, :to_keep], dim=1, descending=True).tolist()
-        sorted_indices_lists = []
-        for arg_list in sorted_arg_lists:
-            sorted_indices_lists.append([(arg // seq_len, arg % seq_len) for arg in arg_list])
+        scores.masked_fill_(scores == 0, -torch.inf)
+        scores = scores.view(scores.shape[0], -1)
+        scores = torch.softmax(scores, dim=-1)
+        sorted_arg_lists = torch.argsort(scores, dim=1, descending=True)[:, :to_keep].tolist()
+        pred_indices = []
+        for idx, arg_list in enumerate(sorted_arg_lists):
+            for arg in arg_list:
+                pred_start, pred_end = arg // seq_len, arg % seq_len
+                if self._are_pred_indices_valid(pred_start, pred_end, eval_items[idx]):
+                    pred_indices.append((pred_start, pred_end))
+                    break
 
-        return sorted_indices_lists
+        return pred_indices
 
     def pred_indices_to_final_answers(self, pred_indices_list: list, eval_items: list) -> list:
         final_answers = []
@@ -434,7 +445,7 @@ class SQuADOpsHandler:
 
         return final_answers
 
-    def are_pred_indices_valid(self, start_index: int, end_index: int, eval_items_for_example: dict) -> bool:
+    def _are_pred_indices_valid(self, start_index: int, end_index: int, eval_items_for_example: dict) -> bool:
         if start_index >= len(eval_items_for_example['tokens']):
             return False
         if end_index >= len(eval_items_for_example['tokens']):

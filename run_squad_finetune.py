@@ -69,6 +69,9 @@ for e in range(args.epochs):
             progress_bar.update(args.batch_size)
             progress_bar.set_postfix(epoch=e, train_loss=loss_val)
 
+    torch.save(model.state_dict(), "./debug_state_dict.pt")
+
+
     # eval
     idx = 0
     dev_loss = 0

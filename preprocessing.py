@@ -403,9 +403,9 @@ class SQuADOpsHandler:
 
     def logits_to_pred_indices(self, s_scores: torch.Tensor, e_scores: torch.Tensor, eval_items: dict) -> list:
         seq_len = s_scores.shape[1]
-        to_keep = (seq_len**2 - seq_len) // 2
+        to_keep = (seq_len**2 - seq_len) // 2 + seq_len
         scores = s_scores.unsqueeze(dim=2) + e_scores.unsqueeze(dim=1)
-        scores = torch.triu(scores, diagonal=1)
+        scores = torch.triu(scores, diagonal=0)
         scores.masked_fill_(scores == 0, -torch.inf)
         scores = scores.view(scores.shape[0], -1)
         scores = torch.softmax(scores, dim=-1)

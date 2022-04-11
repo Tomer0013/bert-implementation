@@ -422,7 +422,7 @@ class SQuADOpsHandler:
 
         return pred_indices
 
-    def pred_indices_to_final_answers(self, pred_indices_list: list, eval_items: list) -> list:
+    def pred_indices_to_final_answers(self, pred_indices_list: list, eval_items: list) -> dict:
         final_answers = {}
         for idx, indices_prob_tup in enumerate(pred_indices_list):
             answer_prob = indices_prob_tup[1]

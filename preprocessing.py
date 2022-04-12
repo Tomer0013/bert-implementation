@@ -239,19 +239,12 @@ class SQuADOpsHandler:
                 tokens.append("[SEP]")
                 segment_ids.append(0)
 
-                token_is_max_context = None
-                if for_eval:
-                    token_is_max_context = {}
-
                 for i in range(doc_span.length):
                     split_token_index = doc_span.start + i
                     token_to_orig_map[len(tokens)] = tok_to_orig_index[split_token_index]
                     tokens.append(all_doc_tokens[split_token_index])
                     segment_ids.append(1)
-                    if for_eval:
-                        is_max_context = self._check_is_max_context(doc_spans, doc_span_index,
-                                                                    split_token_index)
-                        token_is_max_context[len(tokens)] = is_max_context
+
                 tokens.append("[SEP]")
                 segment_ids.append(1)
 
@@ -288,50 +281,12 @@ class SQuADOpsHandler:
 
                 if for_eval:
                     features.append((input_ids, segment_ids, start_position, end_position, example['qa_id'],
-                                     example['qa_all_answers'], tokens, token_to_orig_map, token_is_max_context,
+                                     example['qa_all_answers'], tokens, token_to_orig_map,
                                      example['doc_tokens'], example['orig_answer_text']))
                 else:
                     features.append((input_ids, segment_ids, start_position, end_position))
 
         return features
-
-    @staticmethod
-    def _check_is_max_context(doc_spans: list, cur_span_index: int, position: int) -> bool:
-        """Check if this is the 'max context' doc span for the token."""
-
-        # Because of the sliding window approach taken to scoring documents, a single
-        # token can appear in multiple documents. E.g.
-        #  Doc: the man went to the store and bought a gallon of milk
-        #  Span A: the man went to the
-        #  Span B: to the store and bought
-        #  Span C: and bought a gallon of
-        #  ...
-        #
-        # Now the word 'bought' will have two scores from spans B and C. We only
-        # want to consider the score with "maximum context", which we define as
-        # the *minimum* of its left and right context (the *sum* of left and
-        # right context will always be the same, of course).
-        #
-        # In the example the maximum context for 'bought' would be span C since
-        # it has 1 left context and 3 right context, while span B has 4 left context
-        # and 0 right context.
-
-        best_score = None
-        best_span_index = None
-        for (span_index, doc_span) in enumerate(doc_spans):
-            end = doc_span.start + doc_span.length - 1
-            if position < doc_span.start:
-                continue
-            if position > end:
-                continue
-            num_left_context = position - doc_span.start
-            num_right_context = end - position
-            score = min(num_left_context, num_right_context) + 0.01 * doc_span.length
-            if best_score is None or score > best_score:
-                best_score = score
-                best_span_index = span_index
-
-        return cur_span_index == best_span_index
 
     def _improve_answer_span(self, doc_tokens: list, input_start: int, input_end: int, orig_answer_text: str) -> tuple:
         """Returns tokenized answer spans that better match the annotated answer."""
@@ -397,9 +352,8 @@ class SQuADOpsHandler:
                 'qa_all_answers': feature[5],
                 'tokens': feature[6],
                 'token_to_orig_map': feature[7],
-                'token_is_max_context': feature[8],
-                'doc_tokens': feature[9],
-                'orig_answer_text': feature[10]
+                'doc_tokens': feature[8],
+                'orig_answer_text': feature[9]
             })
         return eval_items
 
@@ -473,8 +427,6 @@ class SQuADOpsHandler:
         if start_index not in eval_items_for_example['token_to_orig_map']:
             return False
         if end_index not in eval_items_for_example['token_to_orig_map']:
-            return False
-        if not eval_items_for_example['token_is_max_context'].get(start_index, False):
             return False
         if end_index < start_index:
             return False

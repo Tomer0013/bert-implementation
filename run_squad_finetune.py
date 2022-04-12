@@ -68,29 +68,29 @@ for e in range(args.epochs):
             progress_bar.update(args.batch_size)
             progress_bar.set_postfix(epoch=e, train_loss=loss_val)
 
-    # eval
-    dev_loss = 0
-    pred_indices_list = []
-    model.eval()
-    with torch.no_grad():
-        for batch_num, batch in enumerate(dev_loader):
-            input_ids, token_type_ids, start_labels, end_labels = batch
-            input_ids = input_ids.to(device)
-            token_type_ids = token_type_ids.to(device)
-            start_labels = start_labels.to(device)
-            end_labels = end_labels.to(device)
-            start_logits, end_logits = model(input_ids, token_type_ids)
-            dev_loss += (cross_entropy(start_logits, start_labels, reduction='sum') +
-                         cross_entropy(end_logits, end_labels, reduction='sum')).item()
-            rel_eval_items = eval_items[batch_num * args.dev_batch_size: (batch_num + 1) * args.dev_batch_size]
-            pred_indices_list += squad_ops_handler.logits_to_pred_indices(start_logits, end_logits, rel_eval_items)
-    pred_answers = squad_ops_handler.pred_indices_to_final_answers(pred_indices_list, eval_items)
-    em_score = squad_compute_metric_for_eval(squad_compute_em, pred_answers, eval_items)
-    f1_score = squad_compute_metric_for_eval(squad_compute_f1, pred_answers, eval_items)
-    print("\n***** Eval results *****")
-    print(f"eval_f1: {f1_score:.6f}")
-    print(f"eval_em: {em_score:.6f}")
-    print(f"eval_loss: {dev_loss / len(dev_dataset):.6f}")
-    print(f"global_step: {global_step}")
+    # # eval
+    # dev_loss = 0
+    # pred_indices_list = []
+    # model.eval()
+    # with torch.no_grad():
+    #     for batch_num, batch in enumerate(dev_loader):
+    #         input_ids, token_type_ids, start_labels, end_labels = batch
+    #         input_ids = input_ids.to(device)
+    #         token_type_ids = token_type_ids.to(device)
+    #         start_labels = start_labels.to(device)
+    #         end_labels = end_labels.to(device)
+    #         start_logits, end_logits = model(input_ids, token_type_ids)
+    #         dev_loss += (cross_entropy(start_logits, start_labels, reduction='sum') +
+    #                      cross_entropy(end_logits, end_labels, reduction='sum')).item()
+    #         rel_eval_items = eval_items[batch_num * args.dev_batch_size: (batch_num + 1) * args.dev_batch_size]
+    #         pred_indices_list += squad_ops_handler.logits_to_pred_indices(start_logits, end_logits, rel_eval_items)
+    # pred_answers = squad_ops_handler.pred_indices_to_final_answers(pred_indices_list, eval_items)
+    # em_score = squad_compute_metric_for_eval(squad_compute_em, pred_answers, eval_items)
+    # f1_score = squad_compute_metric_for_eval(squad_compute_f1, pred_answers, eval_items)
+    # print("\n***** Eval results *****")
+    # print(f"eval_f1: {f1_score:.6f}")
+    # print(f"eval_em: {em_score:.6f}")
+    # print(f"eval_loss: {dev_loss / len(dev_dataset):.6f}")
+    # print(f"global_step: {global_step}")
 
-torch.save(model.state_dict(), "./debug_state_dict.pt")
+torch.save(model.state_dict(), "./debug_state_dict_v2.pt")

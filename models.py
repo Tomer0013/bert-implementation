@@ -33,7 +33,7 @@ class BERT(nn.Module):
         self.pooler = nn.Linear(hidden_size, hidden_size)
 
     def forward(self, input_ids: torch.Tensor, token_type_ids: torch.Tensor) -> torch.Tensor:
-        input_mask = torch.zeros_like(input_ids) != input_ids
+        input_mask = torch.zeros_like(input_ids) == input_ids
         x = self.word_embeddings(input_ids, token_type_ids)
         for enc in self.enc_layers:
             x = enc(x, input_mask)

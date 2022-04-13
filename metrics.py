@@ -68,9 +68,9 @@ def squad_compute_metric_for_eval(metric_fn, pred_answers: list, eval_items: lis
 
     return np.mean(metric_vals)
 
+
 # All methods below this line are from the official SQuAD 2.0 eval script.
 # I have added a "squad_" prefix for the EM and F1 functions.
-# https://worksheets.codalab.org/rest/bundles/0x6b567e1cf2e041ec80d7098f031c5c9e/contents/blob/
 def normalize_answer(s: str) -> str:
     """Convert to lowercase and remove punctuation, articles and extra whitespace."""
 

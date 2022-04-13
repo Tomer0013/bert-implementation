@@ -52,7 +52,7 @@ def spearman_corr(x: list, y: list) -> float:
     return rho
 
 
-def squad_compute_metric_for_eval(metric_fn, pred_answers: list, eval_items: list) -> list:
+def squad_compute_metric_for_eval(metric_fn, pred_answers: dict, eval_items: list) -> list:
     metric_vals = []
     id_answers_dict = {}
     for eval_dict in eval_items:

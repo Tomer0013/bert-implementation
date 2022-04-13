@@ -61,7 +61,7 @@ def get_squad_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--batch_size",
                         type=int,
-                        default=16,
+                        default=12,
                         help="Batch size during training.")
     parser.add_argument("--dev_batch_size",
                         type=int,
@@ -69,7 +69,7 @@ def get_squad_args() -> argparse.Namespace:
                         help="Batch size during eval.")
     parser.add_argument("--lr",
                         type=float,
-                        default=5e-5,
+                        default=3e-5,
                         help="Learning rate.")
     parser.add_argument("--l2_wd",
                         type=float,
@@ -77,7 +77,7 @@ def get_squad_args() -> argparse.Namespace:
                         help="L2 weight decay.")
     parser.add_argument("--epochs",
                         type=int,
-                        default=3,
+                        default=2,
                         help="Number of epochs.")
     parser.add_argument("--max_seq_len",
                         type=int,

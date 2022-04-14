@@ -82,7 +82,8 @@ python run_glue_finetune.py --task_name sst-2
 ```
 ```
 ***** Eval results *****
-
+eval_accuracy: 0.923165
+eval_loss: 0.270706
 ```
 #### QNLI
 ```
@@ -90,7 +91,8 @@ python run_glue_finetune.py --task_name qnli
 ```
 ```
 ***** Eval results *****
-
+eval_accuracy: 0.912868
+eval_loss: 0.370207
 ```
 #### QQP
 ```

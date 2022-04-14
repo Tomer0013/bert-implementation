@@ -52,6 +52,18 @@ def spearman_corr(x: list, y: list) -> float:
     return rho
 
 
+def matthews_corr(preds: list, labels: list) -> float:
+    preds = np.array(preds)
+    labels = np.array(labels)
+    tp = np.sum(preds[labels == 1] == labels[labels == 1])
+    tn = np.sum(preds[labels == 0] == labels[labels == 0])
+    fp = np.sum(preds[labels == 0] != labels[labels == 0])
+    fn = np.sum(preds[labels == 1] != labels[labels == 1])
+    matt_corr = (tp * tn - fp * fn) / np.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
+
+    return matt_corr
+
+
 def squad_compute_metric_for_eval(metric_fn, pred_answers: dict, eval_items: list) -> list:
     metric_vals = []
     id_answers_dict = {}

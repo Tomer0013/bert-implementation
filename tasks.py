@@ -5,7 +5,7 @@ from torch.nn.functional import cross_entropy, mse_loss
 from preprocessing import prep_sentence_pairs_data, prep_single_sentence_data
 from task_datasets import GlueDataset
 from utils import read_tsv_file
-from metrics import accuracy, f1_score, spearman_corr
+from metrics import accuracy, f1_score, spearman_corr, matthews_corr
 
 
 def get_task_items(task_name: str, datasets_path: str, vocab_path: str, max_seq_len: int) -> tuple:
@@ -102,7 +102,7 @@ def cola_task(datasets_path: str, vocab_path: str, max_seq_len: int) -> tuple:
         datasets.append(GlueDataset(input_ids, token_type_ids, labels))
 
     train_dataset, dev_dataset = datasets
-    eval_metrics = [('accuracy', accuracy)]
+    eval_metrics = [('accuracy', accuracy), ('matthews_corr', matthews_corr)]
     num_classes = 2
 
     return num_classes, train_dataset, dev_dataset, eval_metrics, cross_entropy

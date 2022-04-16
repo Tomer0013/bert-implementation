@@ -92,7 +92,7 @@ python run_glue_finetune.py --task_name qnli
 ***** Eval results *****
 eval_accuracy: 0.912868
 ```
-#### QQP (dev set scores seem to be much higher than the test set)
+#### QQP (dev set f1 score seems to be much higher than the test set)
 ```
 python run_glue_finetune.py --task_name qqp
 ```

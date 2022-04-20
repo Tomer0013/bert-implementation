@@ -3,6 +3,7 @@ import re
 import string
 
 from collections import Counter
+from typing import Callable
 
 
 def accuracy(preds: list, labels: list) -> float:
@@ -64,7 +65,7 @@ def matthews_corr(preds: list, labels: list) -> float:
     return matt_corr
 
 
-def squad_compute_metric_for_eval(metric_fn, pred_answers: dict, eval_items: list) -> list:
+def squad_compute_metric_for_eval(metric_fn: Callable, pred_answers: dict, eval_items: list) -> float:
     metric_vals = []
     id_answers_dict = {}
     for eval_dict in eval_items:
@@ -78,7 +79,7 @@ def squad_compute_metric_for_eval(metric_fn, pred_answers: dict, eval_items: lis
         real_answers = [x['text'] for x in id_answers_dict[key]]
         metric_vals.append(np.max([metric_fn(a_real, a_pred) for a_real in real_answers]))
 
-    return np.mean(metric_vals)
+    return np.mean(metric_vals).item()
 
 
 # All methods below this line are from the official SQuAD 2.0 eval script.

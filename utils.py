@@ -71,7 +71,7 @@ def create_pretrained_state_dict_from_google_ckpt(ckpt_path: str) -> dict[str, t
     return new_state_dict
 
 
-def read_tsv_file(path: str, quotechar: str = None) -> list:
+def read_tsv_file(path: str, quotechar: str = None) -> list[list[str]]:
     with open(path, 'r') as f:
         reader = csv.reader(f, delimiter="\t", quotechar=quotechar)
         lines = []

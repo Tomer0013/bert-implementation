@@ -8,7 +8,7 @@ import collections
 from task_datasets import SQuADDataset
 
 
-def truncate_seq_pair(tokens_a: list, tokens_b: list, max_length: int) -> None:
+def truncate_seq_pair(tokens_a: list[str], tokens_b: list[str], max_length: int) -> None:
     while True:
         total_length = len(tokens_a) + len(tokens_b)
         if total_length <= max_length:
@@ -19,7 +19,8 @@ def truncate_seq_pair(tokens_a: list, tokens_b: list, max_length: int) -> None:
             tokens_b.pop()
 
 
-def prep_sentence_pairs_data(data: list, vocab_path: str, max_seq_len: int) -> tuple:
+def prep_sentence_pairs_data(data: list[list[str]], vocab_path: str,
+                             max_seq_len: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     tokenizer = tokenization.FullTokenizer(vocab_path)
     input_ids_list = []
     token_type_ids_list = []
@@ -43,7 +44,8 @@ def prep_sentence_pairs_data(data: list, vocab_path: str, max_seq_len: int) -> t
     return np.array(input_ids_list), np.array(token_type_ids_list), np.array(labels)
 
 
-def prep_single_sentence_data(data: list, vocab_path: str, max_seq_len: int) -> tuple:
+def prep_single_sentence_data(data: list[list[str]], vocab_path: str,
+                              max_seq_len: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     tokenizer = tokenization.FullTokenizer(vocab_path)
     input_ids_list = []
     token_type_ids_list = []
@@ -98,7 +100,7 @@ class SQuADOpsHandler:
 
         return train_dataset
 
-    def get_dev_dataset_and_eval_items(self, file_name: str = "dev-v2.0.json") -> tuple:
+    def get_dev_dataset_and_eval_items(self, file_name: str = "dev-v2.0.json") -> tuple[SQuADDataset, list[dict]]:
         dev_path = os.path.join(self.data_path, file_name)
         examples = self._load_squad_examples(dev_path)
         features = self._examples_to_features(examples, True)
@@ -113,7 +115,7 @@ class SQuADOpsHandler:
             return True
         return False
 
-    def _load_squad_examples(self, path: str) -> list:
+    def _load_squad_examples(self, path: str) -> list[dict]:
         with open(path, 'r') as f:
             input_data = json.load(f)
 
@@ -178,7 +180,7 @@ class SQuADOpsHandler:
 
         return examples
 
-    def _examples_to_features(self, examples: list, for_eval: bool) -> list:
+    def _examples_to_features(self, examples: list[dict], for_eval: bool) -> list[tuple]:
         features = []
         for example in examples:
             query_tokens = self.tokenizer.tokenize(example['question_text'])
@@ -288,7 +290,8 @@ class SQuADOpsHandler:
 
         return features
 
-    def _improve_answer_span(self, doc_tokens: list, input_start: int, input_end: int, orig_answer_text: str) -> tuple:
+    def _improve_answer_span(self, doc_tokens: list[str], input_start: int, input_end: int,
+                             orig_answer_text: str) -> tuple[int, int]:
         """Returns tokenized answer spans that better match the annotated answer."""
 
         # The SQuAD annotations are character based. We first project them to
@@ -325,7 +328,7 @@ class SQuADOpsHandler:
         return input_start, input_end
 
     @staticmethod
-    def _features_to_dataset(features: list) -> SQuADDataset:
+    def _features_to_dataset(features: list[tuple]) -> SQuADDataset:
         input_ids = []
         token_type_ids = []
         start_labels = []
@@ -344,7 +347,7 @@ class SQuADOpsHandler:
         return dataset
 
     @staticmethod
-    def _extract_eval_items(features: list) -> list:
+    def _extract_eval_items(features: list[tuple]) -> list[dict]:
         eval_items = []
         for feature in features:
             eval_items.append({
@@ -357,7 +360,8 @@ class SQuADOpsHandler:
             })
         return eval_items
 
-    def logits_to_pred_indices(self, s_scores: torch.Tensor, e_scores: torch.Tensor, eval_items: dict) -> list:
+    def logits_to_pred_indices(self, s_scores: torch.Tensor, e_scores: torch.Tensor,
+                               eval_items: list[dict]) -> list[tuple]:
         seq_len = s_scores.shape[1]
         to_keep = (seq_len**2 - seq_len) // 2 + seq_len
         scores = s_scores.unsqueeze(dim=2) + e_scores.unsqueeze(dim=1)
@@ -382,7 +386,8 @@ class SQuADOpsHandler:
 
         return pred_indices
 
-    def pred_indices_to_final_answers(self, pred_indices_list: list, eval_items: list) -> dict:
+    def pred_indices_to_final_answers(self, pred_indices_list: list[tuple],
+                                      eval_items: list[dict]) -> dict[int, tuple[str, float]]:
         final_answers = {}
         for idx, indices_prob_tup in enumerate(pred_indices_list):
             eval_items_for_example = eval_items[idx]
@@ -511,7 +516,7 @@ class SQuADOpsHandler:
         return output_text
 
     @staticmethod
-    def _strip_spaces(text: str) -> tuple:
+    def _strip_spaces(text: str) -> tuple[str, dict]:
         ns_chars = []
         ns_to_s_map = collections.OrderedDict()
         for i, c in enumerate(text):

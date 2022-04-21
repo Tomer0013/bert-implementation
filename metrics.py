@@ -3,7 +3,7 @@ import re
 import string
 
 from collections import Counter
-from typing import Callable, Union
+from typing import Callable
 
 
 def accuracy(preds: list[int], labels: list[int]) -> float:
@@ -26,7 +26,7 @@ def f1_score(preds: list[int], labels: list[int]) -> float:
 def precision(preds: list[int], labels: list[int]) -> float:
     preds = np.array(preds)
     labels = np.array(labels)
-    prec = np.mean(preds[preds == 1] == labels[preds == 1])
+    prec = np.mean(preds[preds == 1] == labels[preds == 1]).item()
 
     return prec
 
@@ -34,7 +34,7 @@ def precision(preds: list[int], labels: list[int]) -> float:
 def recall(preds: list[int], labels: list[int]) -> float:
     preds = np.array(preds)
     labels = np.array(labels)
-    rec = np.mean(preds[labels == 1] == labels[labels == 1])
+    rec = np.mean(preds[labels == 1] == labels[labels == 1]).item()
 
     return rec
 

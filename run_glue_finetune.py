@@ -1,3 +1,4 @@
+import argparse
 import os
 import torch
 
@@ -8,7 +9,7 @@ from utils import get_device, set_random_seed
 from args import get_glue_args
 
 
-def main(args) -> None:
+def main(args: argparse.Namespace) -> None:
 
     # Get args
     set_random_seed(args.random_seed)

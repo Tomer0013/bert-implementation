@@ -119,7 +119,7 @@ class SQuADBert(nn.Module):
             torch.nn.init.trunc_normal_(x.weight, std=0.02)
         self.bert.load_state_dict(create_pretrained_state_dict_from_google_ckpt(ckpt_path))
 
-    def forward(self, input_ids: torch.Tensor, token_type_ids: torch.Tensor) -> tuple:
+    def forward(self, input_ids: torch.Tensor, token_type_ids: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         x = self.bert(input_ids, token_type_ids)
         p_start_logits = self.p_start(x).squeeze(dim=-1)
         p_end_logits = self.p_end(x).squeeze(dim=-1)

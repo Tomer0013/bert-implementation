@@ -28,7 +28,7 @@ class GlueDataset(Dataset):
 
         return len(self.labels)
 
-    def __getitem__(self, idx: int) -> tuple:
+    def __getitem__(self, idx: int) -> tuple[torch.Tensor, ...]:
         example = (
             self.input_ids[idx],
             self.token_type_ids[idx],
@@ -60,7 +60,7 @@ class SQuADDataset(Dataset):
 
         return len(self.start_labels)
 
-    def __getitem__(self, idx: int) -> tuple:
+    def __getitem__(self, idx: int) -> tuple[torch.Tensor, ...]:
         example = (
             self.input_ids[idx],
             self.token_type_ids[idx],

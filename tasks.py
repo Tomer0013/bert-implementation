@@ -6,9 +6,12 @@ from preprocessing import prep_sentence_pairs_data, prep_single_sentence_data
 from task_datasets import GlueDataset
 from utils import read_tsv_file
 from metrics import accuracy, f1_score, spearman_corr, matthews_corr
+from typing import Callable
+
+TASK_RETURN = tuple[int, GlueDataset, GlueDataset, list[tuple[str, Callable]], Callable]
 
 
-def get_task_items(task_name: str, datasets_path: str, vocab_path: str, max_seq_len: int) -> tuple:
+def get_task_items(task_name: str, datasets_path: str, vocab_path: str, max_seq_len: int) -> TASK_RETURN:
     assert task_name is not None, "Enter task_name."
     task = task_name.lower()
     assert task in ["mrpc", "mnli", "cola", "rte", "sts-b", "sst-2", "qnli", "qqp"], f"Invalid task_name: {task}"
@@ -38,7 +41,7 @@ def get_task_items(task_name: str, datasets_path: str, vocab_path: str, max_seq_
         return qqp_task(datasets_path, vocab_path, max_seq_len)
 
 
-def mrpc_task(datasets_path: str, vocab_path: str, max_seq_len: int) -> tuple:
+def mrpc_task(datasets_path: str, vocab_path: str, max_seq_len: int) -> TASK_RETURN:
     data_path = os.path.join(datasets_path, "glue_data/MRPC/")
     raw_train = read_tsv_file(os.path.join(data_path, "train.tsv"))
     raw_dev = read_tsv_file(os.path.join(data_path, "dev.tsv"))
@@ -61,7 +64,7 @@ def mrpc_task(datasets_path: str, vocab_path: str, max_seq_len: int) -> tuple:
     return num_classes, train_dataset, dev_dataset, eval_metrics, cross_entropy
 
 
-def mnli_task(datasets_path: str, vocab_path: str, max_seq_len: int) -> tuple:
+def mnli_task(datasets_path: str, vocab_path: str, max_seq_len: int) -> TASK_RETURN:
     data_path = os.path.join(datasets_path, "glue_data/MNLI/")
     raw_train = read_tsv_file(os.path.join(data_path, "train.tsv"))
     raw_dev = read_tsv_file(os.path.join(data_path, "dev_matched.tsv"))
@@ -86,7 +89,7 @@ def mnli_task(datasets_path: str, vocab_path: str, max_seq_len: int) -> tuple:
     return num_classes, train_dataset, dev_dataset, eval_metrics, cross_entropy
 
 
-def cola_task(datasets_path: str, vocab_path: str, max_seq_len: int) -> tuple:
+def cola_task(datasets_path: str, vocab_path: str, max_seq_len: int) -> TASK_RETURN:
     data_path = os.path.join(datasets_path, "glue_data/CoLA/")
     raw_train = read_tsv_file(os.path.join(data_path, "train.tsv"))
     raw_dev = read_tsv_file(os.path.join(data_path, "dev.tsv"))
@@ -108,7 +111,7 @@ def cola_task(datasets_path: str, vocab_path: str, max_seq_len: int) -> tuple:
     return num_classes, train_dataset, dev_dataset, eval_metrics, cross_entropy
 
 
-def rte_task(datasets_path: str, vocab_path: str, max_seq_len: int) -> tuple:
+def rte_task(datasets_path: str, vocab_path: str, max_seq_len: int) -> TASK_RETURN:
     data_path = os.path.join(datasets_path, "glue_data/RTE/")
     raw_train = read_tsv_file(os.path.join(data_path, "train.tsv"))
     raw_dev = read_tsv_file(os.path.join(data_path, "dev.tsv"))
@@ -136,7 +139,7 @@ def rte_task(datasets_path: str, vocab_path: str, max_seq_len: int) -> tuple:
     return num_classes, train_dataset, dev_dataset, eval_metrics, cross_entropy
 
 
-def stsb_task(datasets_path: str, vocab_path: str, max_seq_len: int) -> tuple:
+def stsb_task(datasets_path: str, vocab_path: str, max_seq_len: int) -> TASK_RETURN:
     data_path = os.path.join(datasets_path, "glue_data/STS-B/")
     raw_train = read_tsv_file(os.path.join(data_path, "train.tsv"))
     raw_dev = read_tsv_file(os.path.join(data_path, "dev.tsv"))
@@ -159,7 +162,7 @@ def stsb_task(datasets_path: str, vocab_path: str, max_seq_len: int) -> tuple:
     return num_classes, train_dataset, dev_dataset, eval_metrics, mse_loss
 
 
-def sst2_task(datasets_path: str, vocab_path: str, max_seq_len: int) -> tuple:
+def sst2_task(datasets_path: str, vocab_path: str, max_seq_len: int) -> TASK_RETURN:
     data_path = os.path.join(datasets_path, "glue_data/SST-2/")
     raw_train = read_tsv_file(os.path.join(data_path, "train.tsv"))
     raw_dev = read_tsv_file(os.path.join(data_path, "dev.tsv"))
@@ -181,7 +184,7 @@ def sst2_task(datasets_path: str, vocab_path: str, max_seq_len: int) -> tuple:
     return num_classes, train_dataset, dev_dataset, eval_metrics, cross_entropy
 
 
-def qnli_task(datasets_path: str, vocab_path: str, max_seq_len: int) -> tuple:
+def qnli_task(datasets_path: str, vocab_path: str, max_seq_len: int) -> TASK_RETURN:
     data_path = os.path.join(datasets_path, "glue_data/QNLI/")
     raw_train = read_tsv_file(os.path.join(data_path, "train.tsv"))
     raw_dev = read_tsv_file(os.path.join(data_path, "dev.tsv"))
@@ -209,7 +212,7 @@ def qnli_task(datasets_path: str, vocab_path: str, max_seq_len: int) -> tuple:
     return num_classes, train_dataset, dev_dataset, eval_metrics, cross_entropy
 
 
-def qqp_task(datasets_path: str, vocab_path: str, max_seq_len: int) -> tuple:
+def qqp_task(datasets_path: str, vocab_path: str, max_seq_len: int) -> TASK_RETURN:
     data_path = os.path.join(datasets_path, "glue_data/QQP/")
     raw_train = read_tsv_file(os.path.join(data_path, "train.tsv"))
     raw_dev = read_tsv_file(os.path.join(data_path, "dev.tsv"))

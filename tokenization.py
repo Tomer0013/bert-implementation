@@ -18,7 +18,7 @@ class FullTokenizer:
         self.basic_tokenizer = BasicTokenizer(do_lower_case=do_lower_case)
         self.wordpiece_tokenizer = WordpieceTokenizer(vocab=self.vocab)
 
-    def tokenize(self, text: str) -> list:
+    def tokenize(self, text: str) -> list[str]:
         split_tokens = []
         for token in self.basic_tokenizer.tokenize(text):
             for sub_token in self.wordpiece_tokenizer.tokenize(token):
@@ -26,10 +26,10 @@ class FullTokenizer:
 
         return split_tokens
 
-    def convert_tokens_to_ids(self, tokens: list) -> list:
+    def convert_tokens_to_ids(self, tokens: list[str]) -> list[int]:
         return convert_by_vocab(self.vocab, tokens)
 
-    def convert_ids_to_tokens(self, ids: list) -> list:
+    def convert_ids_to_tokens(self, ids: list[int]) -> list[str]:
         return convert_by_vocab(self.inv_vocab, ids)
 
 
@@ -45,7 +45,7 @@ class BasicTokenizer:
     def __init__(self, do_lower_case: bool = True) -> None:
         self.do_lower_case = do_lower_case
 
-    def tokenize(self, text: str) -> list:
+    def tokenize(self, text: str) -> list[str]:
         text = convert_to_unicode(text)
         text = self._clean_text(text)
 
@@ -74,7 +74,7 @@ class BasicTokenizer:
         return "".join(output)
 
     @staticmethod
-    def _run_split_on_punc(text: str) -> list:
+    def _run_split_on_punc(text: str) -> list[str]:
         chars = list(text)
         i = 0
         start_new_word = True
@@ -123,7 +123,7 @@ class WordpieceTokenizer:
         self.unk_token = unk_token
         self.max_input_chars_per_word = max_input_chars_per_word
 
-    def tokenize(self, text: str) -> list:
+    def tokenize(self, text: str) -> list[str]:
         text = convert_to_unicode(text)
 
         output_tokens = []
@@ -206,17 +206,17 @@ def convert_by_vocab(vocab: dict, items: list) -> list:
     return output
 
 
-def convert_tokens_to_ids(vocab: dict, tokens: list) -> list:
+def convert_tokens_to_ids(vocab: dict[str, int], tokens: list[str]) -> list[int]:
 
     return convert_by_vocab(vocab, tokens)
 
 
-def convert_ids_to_tokens(inv_vocab: dict, ids: list) -> list:
+def convert_ids_to_tokens(inv_vocab: dict[int, str], ids: list[int]) -> list[str]:
 
     return convert_by_vocab(inv_vocab, ids)
 
 
-def whitespace_tokenize(text: str) -> list:
+def whitespace_tokenize(text: str) -> list[str]:
     text = text.strip()
     if not text:
         return []

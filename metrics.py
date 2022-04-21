@@ -3,18 +3,18 @@ import re
 import string
 
 from collections import Counter
-from typing import Callable
+from typing import Callable, Union
 
 
-def accuracy(preds: list, labels: list) -> float:
+def accuracy(preds: list[int], labels: list[int]) -> float:
     preds = np.array(preds)
     labels = np.array(labels)
-    acc = np.mean(preds == labels)
+    acc = np.mean(preds == labels).item()
 
     return acc
 
 
-def f1_score(preds: list, labels: list) -> float:
+def f1_score(preds: list[int], labels: list[int]) -> float:
 
     prec = precision(preds, labels)
     rec = recall(preds, labels)
@@ -23,7 +23,7 @@ def f1_score(preds: list, labels: list) -> float:
     return score
 
 
-def precision(preds: list, labels: list) -> float:
+def precision(preds: list[int], labels: list[int]) -> float:
     preds = np.array(preds)
     labels = np.array(labels)
     prec = np.mean(preds[preds == 1] == labels[preds == 1])
@@ -31,7 +31,7 @@ def precision(preds: list, labels: list) -> float:
     return prec
 
 
-def recall(preds: list, labels: list) -> float:
+def recall(preds: list[int], labels: list[int]) -> float:
     preds = np.array(preds)
     labels = np.array(labels)
     rec = np.mean(preds[labels == 1] == labels[labels == 1])
@@ -39,7 +39,7 @@ def recall(preds: list, labels: list) -> float:
     return rec
 
 
-def spearman_corr(x: list, y: list) -> float:
+def spearman_corr(x: list[int], y: list[int]) -> float:
     x = np.array(x)
     y = np.array(y)
     n = len(x)
@@ -53,7 +53,7 @@ def spearman_corr(x: list, y: list) -> float:
     return rho
 
 
-def matthews_corr(preds: list, labels: list) -> float:
+def matthews_corr(preds: list[int], labels: list[int]) -> float:
     preds = np.array(preds)
     labels = np.array(labels)
     tp = np.sum(preds[labels == 1] == labels[labels == 1])
@@ -65,7 +65,7 @@ def matthews_corr(preds: list, labels: list) -> float:
     return matt_corr
 
 
-def squad_compute_metric_for_eval(metric_fn: Callable, pred_answers: dict, eval_items: list) -> float:
+def squad_compute_metric_for_eval(metric_fn: Callable, pred_answers: dict, eval_items: list[dict]) -> float:
     metric_vals = []
     id_answers_dict = {}
     for eval_dict in eval_items:

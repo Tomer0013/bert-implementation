@@ -6,7 +6,7 @@ import torch
 from tensorflow.train import load_checkpoint
 
 
-def create_pretrained_state_dict_from_google_ckpt(ckpt_path: str) -> dict:
+def create_pretrained_state_dict_from_google_ckpt(ckpt_path: str) -> dict[str, torch.Tensor]:
     reader = load_checkpoint(ckpt_path)
     pretrained_state_dict = {
         v: reader.get_tensor(v) for v in reader.get_variable_to_shape_map()

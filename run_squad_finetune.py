@@ -1,3 +1,4 @@
+import argparse
 import os
 import torch
 
@@ -10,7 +11,7 @@ from torch.nn.functional import cross_entropy
 from metrics import squad_compute_em, squad_compute_f1, squad_compute_metric_for_eval
 
 
-def main(args) -> None:
+def main(args: argparse.Namespace) -> None:
     # Get args
     set_random_seed(args.random_seed)
     vocab_path = os.path.join(args.pretrained_model_path, "vocab.txt")

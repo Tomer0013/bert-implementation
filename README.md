@@ -1,8 +1,7 @@
 # BERT Implementation
-This is a "bare essentials" implementation of the orignal BERT paper:
-https://arxiv.org/pdf/1810.04805.pdf.
-
-The purpose of this project is practice and understanding BERT.
+This is an implementation of the orignal BERT paper, with an aim to reproduce the finetuning
+tasks results as described in the paper.
+BERT Paper: https://arxiv.org/pdf/1810.04805.pdf.
 
 The model is implemented in PyTorch. It uses the original Google checkpoint file for 
 loading the pretrained model. The checkpoint used is `uncased_L-12_H-768_A-12`. 
@@ -92,7 +91,7 @@ python run_glue_finetune.py --task_name qnli
 ***** Eval results *****
 eval_accuracy: 0.912868
 ```
-#### QQP (dev set f1 score seems to be much higher than the test set)
+#### QQP (dev set F1 score seems to be much higher than the test set score in the paper)
 ```
 python run_glue_finetune.py --task_name qqp
 ```
@@ -108,4 +107,19 @@ python run_glue_finetune.py --task_name mnli
 ```
 ***** Eval results *****
 
+```
+### SQuAD Task
+#### SQuAD v1.1
+```
+python run_squad_finetune.py --use_squad_v1 True
+```
+```
+***** Eval results *****
+```
+#### SQuAD v2
+```
+python run_squad_finetune.py --use_squad_v1 False
+```
+```
+***** Eval results *****
 ```

@@ -115,6 +115,8 @@ python run_squad_finetune.py --use_squad_v1 True
 ```
 ```
 ***** Eval results *****
+eval_f1: 0.881645
+eval_em: 0.799258
 ```
 #### SQuAD v2
 ```
@@ -122,4 +124,6 @@ python run_squad_finetune.py --use_squad_v1 False
 ```
 ```
 ***** Eval results *****
+eval_f1: 0.766938
+eval_em: 0.736208
 ```

@@ -18,6 +18,7 @@ def main(args: argparse.Namespace) -> None:
     ckpt_path = os.path.join(args.pretrained_model_path, "bert_model.ckpt")
 
     # Init
+    print("Loading and preprocessing data...")
     data_path = os.path.join(args.datasets_path, "squad_data/")
     squad_ops_handler = SQuADOpsHandler(args.max_seq_len, args.max_query_len, args.doc_stride, args.max_answer_len,
                                         args.use_squad_v1, args.do_lower_case, data_path, vocab_path)

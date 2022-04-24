@@ -106,7 +106,7 @@ python run_glue_finetune.py --task_name mnli
 ```
 ```
 ***** Eval results *****
-
+eval_accuracy: 0.841875
 ```
 ### SQuAD Task
 #### SQuAD v1.1

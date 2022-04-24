@@ -17,6 +17,7 @@ def main(args: argparse.Namespace) -> None:
     ckpt_path = os.path.join(args.pretrained_model_path, "bert_model.ckpt")
 
     # Init
+    print("Loading and preprocessing data...")
     num_classes, train_dataset, dev_dataset, \
         task_eval_metrics, loss_function = get_task_items(args.task_name, args.datasets_path, vocab_path, args.max_seq_len)
     device = get_device()

@@ -5,9 +5,9 @@ BERT Paper: https://arxiv.org/pdf/1810.04805.pdf.
 
 The model is implemented in PyTorch. It uses the original Google checkpoint file for 
 loading the pretrained model. The checkpoint used is `uncased_L-12_H-768_A-12`. 
-It can be found and downloaded the original BERT github: 
+It can be found and downloaded from the original BERT github: 
 https://github.com/google-research/bert.
-The scripts expects the checkpoint files to be located within 
+The script expects the checkpoint files to be located within 
 `bert_base_pretrained/uncased_L-12_H-768_A-12`.
 
 With the pretrained model loaded, this implementation finetunes the specified task and 

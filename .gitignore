@@ -1,3 +1,5 @@
+__pycache__
+.idea
 bert_base_pretrained/*/*
 datasets/glue_data/*/*
 datasets/squad_data/*
